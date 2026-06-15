@@ -26,7 +26,12 @@
     "vite": "^8.0.12"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "axios": "^1.18.0",
+    "mobx": "^6.16.1",
+    "mobx-react-lite": "^4.1.1",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.17.0"
   }
 }
