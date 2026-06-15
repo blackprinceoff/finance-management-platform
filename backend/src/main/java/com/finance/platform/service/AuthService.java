@@ -11,11 +11,13 @@ import com.finance.platform.exception.UnauthorizedException;
 import com.finance.platform.repository.RoleRepository;
 import com.finance.platform.repository.UserRepository;
 import com.finance.platform.security.JwtUtil;
+import com.finance.platform.util.RoleConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 
@@ -29,6 +31,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
 
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new BadRequestException("Email already registered");
@@ -37,8 +40,8 @@ public class AuthService {
             throw new BadRequestException("Username already taken");
         }
 
-        Role defaultRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("Default role not found"));
+        Role defaultRole = roleRepository.findByName(RoleConstants.USER)
+                .orElseThrow(() -> new IllegalStateException("Default role not found"));
 
         User user = User.builder()
                 .username(request.username())

@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
+import { observer } from "mobx-react-lite";
 import authStore from "../stores/authStore";
 
 interface ProtectedRouteProps {
@@ -8,7 +9,7 @@ interface ProtectedRouteProps {
   redirectTo?: string;
 }
 
-export default function ProtectedRoute({
+function ProtectedRoute({
   children,
   requireAuth = true,
   redirectTo = "/auth",
@@ -25,3 +26,5 @@ export default function ProtectedRoute({
 
   return <>{children}</>;
 }
+
+export default observer(ProtectedRoute);

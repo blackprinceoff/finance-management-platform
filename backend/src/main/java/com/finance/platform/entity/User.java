@@ -62,6 +62,11 @@ public class User implements UserDetails {
                 .toList();
     }
 
+    /**
+     * Returns the email as the username because this application uses email-based authentication.
+     * This overrides {@link UserDetails#getUsername()} so that Spring Security treats the
+     * email address as the principal credentials identifier.
+     */
     @Override
     public String getUsername() {
         return email;

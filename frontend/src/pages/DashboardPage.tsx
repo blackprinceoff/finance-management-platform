@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
+import { observer } from "mobx-react-lite";
 import authStore from "../stores/authStore";
 import Button from "../components/Button";
 
-export default function DashboardPage() {
+function DashboardPage() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -31,3 +32,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+export default observer(DashboardPage);

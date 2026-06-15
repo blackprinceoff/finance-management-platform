@@ -1,7 +1,7 @@
 import { makeAutoObservable } from "mobx";
 import axios from "axios";
 import * as authService from "../services/authService";
-import type { LoginRequest, RegisterRequest } from "../types/auth";
+import type { ErrorResponse, LoginRequest, RegisterRequest } from "../types/auth";
 
 class AuthStore {
   token: string | null = localStorage.getItem("token");

@@ -5,6 +5,7 @@ import com.finance.platform.entity.User;
 import com.finance.platform.entity.UserStatus;
 import com.finance.platform.repository.RoleRepository;
 import com.finance.platform.repository.UserRepository;
+import com.finance.platform.util.RoleConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -37,9 +38,9 @@ public class DatabaseInitializer implements CommandLineRunner {
     }
 
     private void initRoles() {
-        if (roleRepository.findByName("ROLE_USER").isEmpty()) {
-            roleRepository.save(new Role(null, "ROLE_USER"));
-            roleRepository.save(new Role(null, "ROLE_ADMIN"));
+        if (roleRepository.findByName(RoleConstants.USER).isEmpty()) {
+            roleRepository.save(new Role(null, RoleConstants.USER));
+            roleRepository.save(new Role(null, RoleConstants.ADMIN));
         }
     }
 
@@ -48,8 +49,8 @@ public class DatabaseInitializer implements CommandLineRunner {
             return;
         }
 
-        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new RuntimeException("ROLE_ADMIN not found"));
+        Role adminRole = roleRepository.findByName(RoleConstants.ADMIN)
+                .orElseThrow(() -> new IllegalStateException("ROLE_ADMIN not found"));
 
         User admin = User.builder()
                 .username(adminUsername)
