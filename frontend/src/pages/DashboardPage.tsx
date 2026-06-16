@@ -25,6 +25,12 @@ function DashboardPage() {
             Transactions
           </button>
           <button
+            onClick={() => navigate("/budgets")}
+            className="text-sm font-medium text-apple-500 transition-colors hover:text-apple-900"
+          >
+            Budgets
+          </button>
+          <button
             onClick={() => navigate("/categories")}
             className="text-sm font-medium text-apple-blue transition-colors hover:text-apple-blue-hover"
           >
