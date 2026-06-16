@@ -4,6 +4,7 @@ import DashboardPage from "./pages/DashboardPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import BudgetsPage from "./pages/BudgetsPage";
 import CategoriesPage from "./pages/CategoriesPage";
+import GoalsPage from "./pages/GoalsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
@@ -38,6 +39,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <BudgetsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/goals"
+        element={
+          <ProtectedRoute>
+            <GoalsPage />
           </ProtectedRoute>
         }
       />
