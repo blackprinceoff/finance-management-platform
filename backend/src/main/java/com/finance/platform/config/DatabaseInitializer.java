@@ -40,6 +40,8 @@ public class DatabaseInitializer implements CommandLineRunner {
     private void initRoles() {
         if (roleRepository.findByName(RoleConstants.USER).isEmpty()) {
             roleRepository.save(new Role(null, RoleConstants.USER));
+        }
+        if (roleRepository.findByName(RoleConstants.ADMIN).isEmpty()) {
             roleRepository.save(new Role(null, RoleConstants.ADMIN));
         }
     }

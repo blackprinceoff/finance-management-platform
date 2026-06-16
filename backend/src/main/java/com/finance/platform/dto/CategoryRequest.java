@@ -1,5 +1,6 @@
 package com.finance.platform.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.finance.platform.entity.CategoryType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -13,5 +14,5 @@ public record CategoryRequest(
         @NotNull CategoryType type,
 
         @Schema(example = "false")
-        boolean isGlobal
+        @JsonProperty("isGlobal") boolean isGlobal
 ) {}

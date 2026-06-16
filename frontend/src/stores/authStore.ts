@@ -1,4 +1,4 @@
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 import axios from "axios";
 import * as authService from "../services/authService";
 import type { ErrorResponse, LoginRequest, RegisterRequest } from "../types/auth";
@@ -17,14 +17,20 @@ class AuthStore {
     this.error = null;
     try {
       const response = await authService.login(data);
-      this.token = response.token;
+      runInAction(() => {
+        this.token = response.token;
+      });
       localStorage.setItem("token", response.token);
       return true;
     } catch (e) {
-      this.error = extractErrorMessage(e);
+      runInAction(() => {
+        this.error = extractErrorMessage(e);
+      });
       return false;
     } finally {
-      this.isLoading = false;
+      runInAction(() => {
+        this.isLoading = false;
+      });
     }
   }
 
@@ -33,14 +39,20 @@ class AuthStore {
     this.error = null;
     try {
       const response = await authService.register(data);
-      this.token = response.token;
+      runInAction(() => {
+        this.token = response.token;
+      });
       localStorage.setItem("token", response.token);
       return true;
     } catch (e) {
-      this.error = extractErrorMessage(e);
+      runInAction(() => {
+        this.error = extractErrorMessage(e);
+      });
       return false;
     } finally {
-      this.isLoading = false;
+      runInAction(() => {
+        this.isLoading = false;
+      });
     }
   }
 

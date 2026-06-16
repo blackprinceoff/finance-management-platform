@@ -17,9 +17,23 @@ function DashboardPage() {
         <span className="text-lg font-semibold text-apple-900">
           Finance Platform
         </span>
-        <Button variant="secondary" onClick={handleLogout}>
-          Logout
-        </Button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate("/transactions")}
+            className="text-sm font-medium text-apple-500 transition-colors hover:text-apple-900"
+          >
+            Transactions
+          </button>
+          <button
+            onClick={() => navigate("/categories")}
+            className="text-sm font-medium text-apple-blue transition-colors hover:text-apple-blue-hover"
+          >
+            Categories
+          </button>
+          <Button variant="secondary" onClick={handleLogout}>
+            Logout
+          </Button>
+        </div>
       </header>
 
       <main className="mx-auto mt-16 max-w-2xl px-4">
