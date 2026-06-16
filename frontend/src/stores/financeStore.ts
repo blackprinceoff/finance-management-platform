@@ -1,6 +1,8 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import axios from "axios";
 import type {
+  Budget,
+  BudgetRequest,
   Category,
   CategoryRequest,
   Expense,
@@ -8,11 +10,13 @@ import type {
   Income,
   IncomeRequest,
 } from "../types/finance";
+import * as budgetService from "../services/budgetService";
 import * as categoryService from "../services/categoryService";
 import * as expenseService from "../services/expenseService";
 import * as incomeService from "../services/incomeService";
 
 class FinanceStore {
+  budgets: Budget[] = [];
   categories: Category[] = [];
   expenses: Expense[] = [];
   incomes: Income[] = [];
@@ -270,6 +274,93 @@ class FinanceStore {
       await incomeService.remove(id);
       runInAction(() => {
         this.incomes = this.incomes.filter((i) => i.id !== id);
+      });
+      return true;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.error = extractErrorMessage(e);
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  async fetchBudgets(): Promise<boolean> {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const data = await budgetService.getAll();
+      runInAction(() => {
+        this.budgets = data;
+      });
+      return true;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.error = extractErrorMessage(e);
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  async createBudget(data: BudgetRequest): Promise<boolean> {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const budget = await budgetService.create(data);
+      runInAction(() => {
+        this.budgets.unshift(budget);
+      });
+      return true;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.error = extractErrorMessage(e);
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  async updateBudget(id: number, data: BudgetRequest): Promise<boolean> {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const updated = await budgetService.update(id, data);
+      runInAction(() => {
+        const index = this.budgets.findIndex((b) => b.id === id);
+        if (index !== -1) {
+          this.budgets[index] = updated;
+        }
+      });
+      return true;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.error = extractErrorMessage(e);
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  async deleteBudget(id: number): Promise<boolean> {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      await budgetService.remove(id);
+      runInAction(() => {
+        this.budgets = this.budgets.filter((b) => b.id !== id);
       });
       return true;
     } catch (e: unknown) {

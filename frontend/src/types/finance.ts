@@ -47,3 +47,20 @@ export interface IncomeRequest {
   date: string;
   categoryId: number;
 }
+
+export interface Budget {
+  id: number;
+  amount: number;
+  month: number;
+  year: number;
+  categoryId: number;
+  categoryName: string;
+  userId: number;
+}
+
+export interface BudgetRequest {
+  amount: number;
+  month: number;
+  year: number;
+  categoryId: number;
+}
