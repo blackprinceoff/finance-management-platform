@@ -9,6 +9,7 @@ import com.finance.platform.exception.ResourceNotFoundException;
 import com.finance.platform.exception.UnauthorizedException;
 import com.finance.platform.repository.CategoryRepository;
 import com.finance.platform.repository.IncomeRepository;
+import com.finance.platform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,10 +18,12 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class IncomeService {
 
     private final IncomeRepository incomeRepository;
     private final CategoryRepository categoryRepository;
+    private final UserRepository userRepository;
 
     public List<IncomeResponse> getAllIncomes(Long userId, Long categoryId) {
         List<Income> incomes;
@@ -43,34 +46,36 @@ public class IncomeService {
     }
 
     @Transactional
-    public IncomeResponse createIncome(IncomeRequest request, User currentUser) {
+    public IncomeResponse createIncome(IncomeRequest request, Long userId) {
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", request.categoryId()));
 
-        if (!category.isGlobal() && !category.getUser().getId().equals(currentUser.getId())) {
+        if (!category.isGlobal() && !category.getUser().getId().equals(userId)) {
             throw new UnauthorizedException("You cannot use this category");
         }
+
+        User userRef = userRepository.getReferenceById(userId);
 
         Income income = Income.builder()
                 .amount(request.amount())
                 .description(request.description())
                 .date(request.date())
                 .category(category)
-                .user(currentUser)
+                .user(userRef)
                 .build();
 
         return toResponse(incomeRepository.save(income));
     }
 
     @Transactional
-    public IncomeResponse updateIncome(Long id, IncomeRequest request, User currentUser) {
-        Income income = incomeRepository.findByIdAndUserId(id, currentUser.getId())
+    public IncomeResponse updateIncome(Long id, IncomeRequest request, Long userId) {
+        Income income = incomeRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Income", "id", id));
 
         Category category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", request.categoryId()));
 
-        if (!category.isGlobal() && !category.getUser().getId().equals(currentUser.getId())) {
+        if (!category.isGlobal() && !category.getUser().getId().equals(userId)) {
             throw new UnauthorizedException("You cannot use this category");
         }
 

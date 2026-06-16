@@ -2,13 +2,13 @@ package com.finance.platform.controller;
 
 import com.finance.platform.dto.ExpenseRequest;
 import com.finance.platform.dto.ExpenseResponse;
-import com.finance.platform.entity.User;
+import com.finance.platform.security.UserPrincipal;
 import com.finance.platform.service.ExpenseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,40 +22,39 @@ public class ExpenseController {
 
     @GetMapping
     public ResponseEntity<List<ExpenseResponse>> getAllExpenses(
-            @RequestParam(required = false) Long categoryId) {
-        User currentUser = getCurrentUser();
-        return ResponseEntity.ok(expenseService.getAllExpenses(currentUser.getId(), categoryId));
+            @RequestParam(required = false) Long categoryId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(expenseService.getAllExpenses(principal.getId(), categoryId));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ExpenseResponse> getExpenseById(@PathVariable Long id) {
-        User currentUser = getCurrentUser();
-        return ResponseEntity.ok(expenseService.getExpenseById(id, currentUser.getId()));
+    public ResponseEntity<ExpenseResponse> getExpenseById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(expenseService.getExpenseById(id, principal.getId()));
     }
 
     @PostMapping
-    public ResponseEntity<ExpenseResponse> createExpense(@Valid @RequestBody ExpenseRequest request) {
-        User currentUser = getCurrentUser();
+    public ResponseEntity<ExpenseResponse> createExpense(
+            @Valid @RequestBody ExpenseRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(expenseService.createExpense(request, currentUser));
+                .body(expenseService.createExpense(request, principal.getId()));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ExpenseResponse> updateExpense(
             @PathVariable Long id,
-            @Valid @RequestBody ExpenseRequest request) {
-        User currentUser = getCurrentUser();
-        return ResponseEntity.ok(expenseService.updateExpense(id, request, currentUser));
+            @Valid @RequestBody ExpenseRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(expenseService.updateExpense(id, request, principal.getId()));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteExpense(@PathVariable Long id) {
-        User currentUser = getCurrentUser();
-        expenseService.deleteExpense(id, currentUser.getId());
+    public ResponseEntity<Void> deleteExpense(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        expenseService.deleteExpense(id, principal.getId());
         return ResponseEntity.noContent().build();
-    }
-
-    private User getCurrentUser() {
-        return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 }

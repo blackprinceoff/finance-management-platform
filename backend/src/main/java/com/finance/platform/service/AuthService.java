@@ -11,6 +11,7 @@ import com.finance.platform.exception.UnauthorizedException;
 import com.finance.platform.repository.RoleRepository;
 import com.finance.platform.repository.UserRepository;
 import com.finance.platform.security.JwtUtil;
+import com.finance.platform.security.UserPrincipal;
 import com.finance.platform.util.RoleConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -53,7 +54,7 @@ public class AuthService {
 
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user);
+        String token = jwtUtil.generateToken(UserPrincipal.from(user));
         return new AuthResponse(token);
     }
 
@@ -65,7 +66,7 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
-        String token = jwtUtil.generateToken(user);
+        String token = jwtUtil.generateToken(UserPrincipal.from(user));
         return new AuthResponse(token);
     }
 }

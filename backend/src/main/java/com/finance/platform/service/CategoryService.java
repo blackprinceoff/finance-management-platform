@@ -4,10 +4,11 @@ import com.finance.platform.dto.CategoryRequest;
 import com.finance.platform.dto.CategoryResponse;
 import com.finance.platform.entity.Category;
 import com.finance.platform.entity.User;
-import com.finance.platform.exception.BadRequestException;
 import com.finance.platform.exception.ResourceNotFoundException;
 import com.finance.platform.exception.UnauthorizedException;
 import com.finance.platform.repository.CategoryRepository;
+import com.finance.platform.repository.UserRepository;
+import com.finance.platform.security.UserPrincipal;
 import com.finance.platform.util.RoleConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,9 +18,11 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final UserRepository userRepository;
 
     public List<CategoryResponse> getAllCategories(Long userId) {
         return categoryRepository.findByUserIdOrIsGlobal(userId).stream()
@@ -33,37 +36,39 @@ public class CategoryService {
     }
 
     @Transactional
-    public CategoryResponse createCategory(CategoryRequest request, User currentUser) {
-        if (request.isGlobal() && !isAdmin(currentUser)) {
+    public CategoryResponse createCategory(CategoryRequest request, UserPrincipal principal) {
+        if (request.isGlobal() && !principal.hasRole(RoleConstants.ADMIN)) {
             throw new UnauthorizedException("Only admins can create global categories");
         }
+
+        User userRef = request.isGlobal() ? null : userRepository.getReferenceById(principal.getId());
 
         Category category = Category.builder()
                 .name(request.name())
                 .type(request.type())
                 .isGlobal(request.isGlobal())
-                .user(request.isGlobal() ? null : currentUser)
+                .user(userRef)
                 .build();
 
         return toResponse(categoryRepository.save(category));
     }
 
     @Transactional
-    public CategoryResponse updateCategory(Long id, CategoryRequest request, User currentUser) {
+    public CategoryResponse updateCategory(Long id, CategoryRequest request, UserPrincipal principal) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", id));
 
         if (category.isGlobal()) {
-            if (!isAdmin(currentUser)) {
+            if (!principal.hasRole(RoleConstants.ADMIN)) {
                 throw new UnauthorizedException("Only admins can update global categories");
             }
         } else {
-            if (!category.getUser().getId().equals(currentUser.getId())) {
+            if (!category.getUser().getId().equals(principal.getId())) {
                 throw new UnauthorizedException("You can only update your own categories");
             }
         }
 
-        if (request.isGlobal() && !isAdmin(currentUser)) {
+        if (request.isGlobal() && !principal.hasRole(RoleConstants.ADMIN)) {
             throw new UnauthorizedException("Only admins can convert a category to global");
         }
 
@@ -75,16 +80,16 @@ public class CategoryService {
     }
 
     @Transactional
-    public void deleteCategory(Long id, User currentUser) {
+    public void deleteCategory(Long id, UserPrincipal principal) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", "id", id));
 
         if (category.isGlobal()) {
-            if (!isAdmin(currentUser)) {
+            if (!principal.hasRole(RoleConstants.ADMIN)) {
                 throw new UnauthorizedException("Only admins can delete global categories");
             }
         } else {
-            if (!category.getUser().getId().equals(currentUser.getId())) {
+            if (!category.getUser().getId().equals(principal.getId())) {
                 throw new UnauthorizedException("You can only delete your own categories");
             }
         }
@@ -101,11 +106,6 @@ public class CategoryService {
         }
 
         return category;
-    }
-
-    private boolean isAdmin(User user) {
-        return user.getRoles().stream()
-                .anyMatch(role -> role.getName().equals(RoleConstants.ADMIN));
     }
 
     private CategoryResponse toResponse(Category category) {
