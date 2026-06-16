@@ -64,3 +64,19 @@ export interface BudgetRequest {
   year: number;
   categoryId: number;
 }
+
+export interface Goal {
+  id: number;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline: string;
+  userId: number;
+}
+
+export interface GoalRequest {
+  name: string;
+  targetAmount: number;
+  currentAmount?: number;
+  deadline: string;
+}

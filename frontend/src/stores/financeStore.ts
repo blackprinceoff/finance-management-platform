@@ -7,18 +7,22 @@ import type {
   CategoryRequest,
   Expense,
   ExpenseRequest,
+  Goal,
+  GoalRequest,
   Income,
   IncomeRequest,
 } from "../types/finance";
 import * as budgetService from "../services/budgetService";
 import * as categoryService from "../services/categoryService";
 import * as expenseService from "../services/expenseService";
+import * as goalService from "../services/goalService";
 import * as incomeService from "../services/incomeService";
 
 class FinanceStore {
   budgets: Budget[] = [];
   categories: Category[] = [];
   expenses: Expense[] = [];
+  goals: Goal[] = [];
   incomes: Income[] = [];
   isLoading = false;
   error: string | null = null;
@@ -361,6 +365,93 @@ class FinanceStore {
       await budgetService.remove(id);
       runInAction(() => {
         this.budgets = this.budgets.filter((b) => b.id !== id);
+      });
+      return true;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.error = extractErrorMessage(e);
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  async fetchGoals(): Promise<boolean> {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const data = await goalService.getAll();
+      runInAction(() => {
+        this.goals = data;
+      });
+      return true;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.error = extractErrorMessage(e);
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  async createGoal(data: GoalRequest): Promise<boolean> {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const goal = await goalService.create(data);
+      runInAction(() => {
+        this.goals.unshift(goal);
+      });
+      return true;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.error = extractErrorMessage(e);
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  async updateGoal(id: number, data: GoalRequest): Promise<boolean> {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const updated = await goalService.update(id, data);
+      runInAction(() => {
+        const index = this.goals.findIndex((g) => g.id === id);
+        if (index !== -1) {
+          this.goals[index] = updated;
+        }
+      });
+      return true;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.error = extractErrorMessage(e);
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  async deleteGoal(id: number): Promise<boolean> {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      await goalService.remove(id);
+      runInAction(() => {
+        this.goals = this.goals.filter((g) => g.id !== id);
       });
       return true;
     } catch (e: unknown) {
