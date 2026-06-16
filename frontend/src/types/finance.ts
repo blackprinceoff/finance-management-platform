@@ -80,3 +80,17 @@ export interface GoalRequest {
   currentAmount?: number;
   deadline: string;
 }
+
+export interface DashboardSummary {
+  totalIncome: number;
+  totalExpense: number;
+  currentBalance: number;
+}
+
+export interface BudgetProgress {
+  categoryName: string;
+  budgetAmount: number;
+  spentAmount: number;
+  remainingAmount: number;
+  isExceeded: boolean;
+}

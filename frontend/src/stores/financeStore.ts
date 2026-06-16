@@ -14,9 +14,11 @@ import type {
 } from "../types/finance";
 import * as budgetService from "../services/budgetService";
 import * as categoryService from "../services/categoryService";
+import * as dashboardService from "../services/dashboardService";
 import * as expenseService from "../services/expenseService";
 import * as goalService from "../services/goalService";
 import * as incomeService from "../services/incomeService";
+import type { BudgetProgress, DashboardSummary } from "../types/finance";
 
 class FinanceStore {
   budgets: Budget[] = [];
@@ -24,6 +26,8 @@ class FinanceStore {
   expenses: Expense[] = [];
   goals: Goal[] = [];
   incomes: Income[] = [];
+  dashboardSummary: DashboardSummary | null = null;
+  budgetProgressList: BudgetProgress[] = [];
   isLoading = false;
   error: string | null = null;
 
@@ -452,6 +456,31 @@ class FinanceStore {
       await goalService.remove(id);
       runInAction(() => {
         this.goals = this.goals.filter((g) => g.id !== id);
+      });
+      return true;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.error = extractErrorMessage(e);
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  async fetchDashboardData(month: number, year: number): Promise<boolean> {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const [summary, progress] = await Promise.all([
+        dashboardService.getSummary(month, year),
+        dashboardService.getBudgetProgress(month, year),
+      ]);
+      runInAction(() => {
+        this.dashboardSummary = summary;
+        this.budgetProgressList = progress;
       });
       return true;
     } catch (e: unknown) {
