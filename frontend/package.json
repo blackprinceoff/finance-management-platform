@@ -27,11 +27,13 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
+    "@types/react-datepicker": "^6.2.0",
     "axios": "^1.18.0",
     "jwt-decode": "^4.0.0",
     "mobx": "^6.16.1",
     "mobx-react-lite": "^4.1.1",
     "react": "^19.2.7",
+    "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.7",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.17.0"

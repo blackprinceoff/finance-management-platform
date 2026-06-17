@@ -4,6 +4,31 @@ import Button from "../components/Button";
 import * as adminService from "../services/adminService";
 import type { AdminUser, AuditLog } from "../types/admin";
 import { toast } from "react-hot-toast";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+function getPageNumbers(currentPage: number, totalPages: number): (number | string)[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const pages: (number | string)[] = [1];
+  const current = currentPage + 1;
+  const last = totalPages;
+
+  const rangeStart = Math.max(2, current - 1);
+  const rangeEnd = Math.min(last - 1, current + 1);
+
+  if (rangeStart > 2) pages.push("...");
+
+  for (let i = rangeStart; i <= rangeEnd; i++) pages.push(i);
+
+  if (rangeEnd < last - 1) pages.push("...");
+
+  if (last > 1) pages.push(last);
+
+  return pages;
+}
 
 function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -11,11 +36,19 @@ function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
-  const fetchAuditLogs = async () => {
+  const fetchAuditLogs = async (pageNum: number, start?: string, end?: string) => {
     try {
-      const logsData = await adminService.getAuditLogs();
-      setAuditLogs(logsData);
+      const startParam = start ? start + "T00:00:00" : undefined;
+      const endParam = end ? end + "T23:59:59.999" : undefined;
+      const logsData = await adminService.getAuditLogs(pageNum, 10, startParam, endParam);
+      setAuditLogs(logsData.content);
+      setTotalPages(logsData.totalPages);
+      setCurrentPage(logsData.number);
     } catch {
       // silent — non-critical refresh
     }
@@ -27,10 +60,12 @@ function AdminPage() {
     try {
       const [usersData, logsData] = await Promise.all([
         adminService.getUsers(),
-        adminService.getAuditLogs(),
+        adminService.getAuditLogs(0, 10),
       ]);
       setUsers(usersData);
-      setAuditLogs(logsData);
+      setAuditLogs(logsData.content);
+      setTotalPages(logsData.totalPages);
+      setCurrentPage(logsData.number);
     } catch {
       setError("Failed to load admin data.");
     } finally {
@@ -50,7 +85,7 @@ function AdminPage() {
         prev.map((u) => (u.id === id ? { ...u, status: "BLOCKED" as const } : u)),
       );
       toast.success("User blocked successfully");
-      fetchAuditLogs();
+      fetchAuditLogs(0);
     } catch {
       setError("Failed to block user.");
     } finally {
@@ -66,7 +101,7 @@ function AdminPage() {
         prev.map((u) => (u.id === id ? { ...u, status: "ACTIVE" as const } : u)),
       );
       toast.success("User unblocked successfully");
-      fetchAuditLogs();
+      fetchAuditLogs(0);
     } catch {
       setError("Failed to unblock user.");
     } finally {
@@ -92,9 +127,8 @@ function AdminPage() {
     };
     return (
       <span
-        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-          colors[status] ?? "bg-gray-100 text-gray-600"
-        }`}
+        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${colors[status] ?? "bg-gray-100 text-gray-600"
+          }`}
       >
         {status}
       </span>
@@ -182,10 +216,32 @@ function AdminPage() {
         </section>
 
         <section className="mt-8 rounded-2xl bg-white shadow-sm">
-          <div className="border-b border-apple-100 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-apple-100 px-6 py-4">
             <h2 className="text-base font-semibold text-apple-900">
               Audit Logs
             </h2>
+            <div className="flex items-center gap-3">
+              <DatePicker
+                selectsRange={true}
+                startDate={startDate ? new Date(startDate + "T00:00:00") : null}
+                endDate={endDate ? new Date(endDate + "T00:00:00") : null}
+                onChange={(dates: [Date | null, Date | null]) => {
+                  const [start, end] = dates;
+                  setStartDate(start ? start.toISOString().split("T")[0] : "");
+                  setEndDate(end ? end.toISOString().split("T")[0] : "");
+                }}
+                isClearable={true}
+                placeholderText="Start Date – End Date"
+                dateFormat="MMM d, yyyy"
+                className="w-64 rounded-lg border border-apple-200 px-3 py-1.5 pr-8 text-sm text-apple-700 focus:border-apple-400 focus:outline-none cursor-pointer"
+              />
+              <Button
+                variant="secondary"
+                onClick={() => fetchAuditLogs(0, startDate || undefined, endDate || undefined)}
+              >
+                Filter
+              </Button>
+            </div>
           </div>
 
           {loading ? (
@@ -227,6 +283,49 @@ function AdminPage() {
                   ))}
                 </tbody>
               </table>
+              <div className="flex items-center justify-center gap-1 border-t border-apple-100 px-6 py-4">
+                <button
+                  disabled={currentPage === 0}
+                  onClick={() => fetchAuditLogs(currentPage - 1, startDate || undefined, endDate || undefined)}
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+
+                {getPageNumbers(currentPage, totalPages).map((page, idx) =>
+                  page === "..." ? (
+                    <span
+                      key={`ellipsis-${idx}`}
+                      className="flex h-8 w-8 items-center justify-center text-sm text-gray-400"
+                    >
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => fetchAuditLogs(Number(page) - 1, startDate || undefined, endDate || undefined)}
+                      className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors ${page === currentPage + 1
+                          ? "bg-gray-900 font-medium text-white"
+                          : "text-gray-600 hover:bg-gray-100"
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                )}
+
+                <button
+                  disabled={currentPage >= totalPages - 1}
+                  onClick={() => fetchAuditLogs(currentPage + 1, startDate || undefined, endDate || undefined)}
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
         </section>

@@ -1,5 +1,6 @@
 package com.finance.platform.service;
 
+import com.finance.platform.dto.admin.AuditLogResponse;
 import com.finance.platform.dto.admin.UserDTO;
 import com.finance.platform.entity.AuditLog;
 import com.finance.platform.entity.User;
@@ -8,11 +9,15 @@ import com.finance.platform.exception.ResourceNotFoundException;
 import com.finance.platform.repository.AuditLogRepository;
 import com.finance.platform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.finance.platform.security.UserPrincipal;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,7 +43,8 @@ public class AdminService {
         user.setStatus(UserStatus.BLOCKED);
         userRepository.save(user);
 
-        UserPrincipal adminPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserPrincipal adminPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal();
         auditLoggingService.logAction(adminPrincipal.getId(), "BLOCKED_USER_" + userId);
     }
 
@@ -49,12 +55,19 @@ public class AdminService {
         user.setStatus(UserStatus.ACTIVE);
         userRepository.save(user);
 
-        UserPrincipal adminPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserPrincipal adminPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal();
         auditLoggingService.logAction(adminPrincipal.getId(), "UNBLOCKED_USER_" + userId);
     }
 
-    public List<AuditLog> getAuditLogs() {
-        return auditLogRepository.findAllByOrderByTimestampDesc();
+    public Page<AuditLogResponse> getAuditLogs(LocalDateTime startDate, LocalDateTime endDate, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "timestamp"));
+
+        Page<AuditLog> auditLogPage = (startDate != null && endDate != null)
+                ? auditLogRepository.findByTimestampBetween(startDate, endDate, pageable)
+                : auditLogRepository.findAll(pageable);
+
+        return auditLogPage.map(this::toAuditLogResponse);
     }
 
     private UserDTO toUserDTO(User user) {
@@ -65,7 +78,15 @@ public class AdminService {
                 user.getStatus(),
                 user.getRoles().stream()
                         .map(role -> role.getName())
-                        .collect(Collectors.toSet())
-        );
+                        .collect(Collectors.toSet()));
+    }
+
+    private AuditLogResponse toAuditLogResponse(AuditLog log) {
+        return new AuditLogResponse(
+                log.getId(),
+                log.getUserId(),
+                log.getAction(),
+                log.getTimestamp(),
+                log.getIpAddress());
     }
 }
