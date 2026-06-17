@@ -12,6 +12,15 @@ function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<number | null>(null);
 
+  const fetchAuditLogs = async () => {
+    try {
+      const logsData = await adminService.getAuditLogs();
+      setAuditLogs(logsData);
+    } catch {
+      // silent — non-critical refresh
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     setError(null);
@@ -41,6 +50,7 @@ function AdminPage() {
         prev.map((u) => (u.id === id ? { ...u, status: "BLOCKED" as const } : u)),
       );
       toast.success("User blocked successfully");
+      fetchAuditLogs();
     } catch {
       setError("Failed to block user.");
     } finally {
@@ -56,6 +66,7 @@ function AdminPage() {
         prev.map((u) => (u.id === id ? { ...u, status: "ACTIVE" as const } : u)),
       );
       toast.success("User unblocked successfully");
+      fetchAuditLogs();
     } catch {
       setError("Failed to unblock user.");
     } finally {

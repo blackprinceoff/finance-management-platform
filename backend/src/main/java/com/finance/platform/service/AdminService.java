@@ -54,7 +54,7 @@ public class AdminService {
     }
 
     public List<AuditLog> getAuditLogs() {
-        return auditLogRepository.findAll();
+        return auditLogRepository.findAllByOrderByTimestampDesc();
     }
 
     private UserDTO toUserDTO(User user) {
