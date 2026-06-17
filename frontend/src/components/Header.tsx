@@ -86,7 +86,7 @@ function Header({ currentPage }: HeaderProps) {
         {authStore.isAdmin && (
           <button
             onClick={() => navigate("/admin")}
-            className={`text-sm font-medium transition-colors ${
+            className={`whitespace-nowrap text-sm font-medium transition-colors ${
               currentPage === "admin"
                 ? "text-apple-blue hover:text-apple-blue-hover"
                 : "text-apple-500 hover:text-apple-900"
