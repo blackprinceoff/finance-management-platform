@@ -31,6 +31,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final AuditLoggingService auditLoggingService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -59,14 +60,21 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("User account is locked or disabled");
+        }
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
 
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
-
         String token = jwtUtil.generateToken(UserPrincipal.from(user));
+        
+        auditLoggingService.logAction(user.getId(), "LOGIN");
+        
         return new AuthResponse(token);
     }
 }

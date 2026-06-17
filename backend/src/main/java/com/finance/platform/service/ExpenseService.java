@@ -5,6 +5,8 @@ import com.finance.platform.dto.ExpenseResponse;
 import com.finance.platform.entity.Category;
 import com.finance.platform.entity.Expense;
 import com.finance.platform.entity.User;
+import com.finance.platform.entity.CategoryType;
+import com.finance.platform.exception.BadRequestException;
 import com.finance.platform.exception.ResourceNotFoundException;
 import com.finance.platform.exception.UnauthorizedException;
 import com.finance.platform.repository.CategoryRepository;
@@ -54,6 +56,10 @@ public class ExpenseService {
             throw new UnauthorizedException("You cannot use this category");
         }
 
+        if (category.getType() != CategoryType.EXPENSE) {
+            throw new BadRequestException("Category must be of type EXPENSE");
+        }
+
         User userRef = userRepository.getReferenceById(userId);
 
         Expense expense = Expense.builder()
@@ -77,6 +83,10 @@ public class ExpenseService {
 
         if (!category.isGlobal() && !category.getUser().getId().equals(userId)) {
             throw new UnauthorizedException("You cannot use this category");
+        }
+
+        if (category.getType() != CategoryType.EXPENSE) {
+            throw new BadRequestException("Category must be of type EXPENSE");
         }
 
         expense.setAmount(request.amount());

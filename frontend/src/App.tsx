@@ -1,4 +1,5 @@
 import { Route, Routes, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import TransactionsPage from "./pages/TransactionsPage";
@@ -10,7 +11,20 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            borderRadius: "12px",
+            background: "#333",
+            color: "#fff",
+            fontSize: "14px",
+          },
+        }}
+      />
+      <Routes>
       <Route
         path="/auth"
         element={
@@ -69,5 +83,6 @@ export default function App() {
       />
       <Route path="*" element={<Navigate to="/auth" replace />} />
     </Routes>
+    </>
   );
 }

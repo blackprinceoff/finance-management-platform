@@ -1,8 +1,8 @@
 import { makeAutoObservable, runInAction } from "mobx";
-import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import * as authService from "../services/authService";
-import type { ErrorResponse, JwtPayload, LoginRequest, RegisterRequest } from "../types/auth";
+import { extractErrorMessage } from "../utils/errorUtils";
+import type { JwtPayload, LoginRequest, RegisterRequest } from "../types/auth";
 
 class AuthStore {
   token: string | null = localStorage.getItem("token");
@@ -82,19 +82,6 @@ class AuthStore {
   logout(): void {
     this.clearAuth();
   }
-}
-
-function extractErrorMessage(e: unknown): string {
-  if (axios.isAxiosError<ErrorResponse>(e) && e.response?.data?.error) {
-    return e.response.data.error;
-  }
-  if (axios.isAxiosError(e)) {
-    return e.message;
-  }
-  if (e instanceof Error) {
-    return e.message;
-  }
-  return "An unexpected error occurred";
 }
 
 const authStore = new AuthStore();

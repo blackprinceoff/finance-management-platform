@@ -33,6 +33,7 @@
     "mobx-react-lite": "^4.1.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.17.0"
   }
 }

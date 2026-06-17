@@ -10,6 +10,8 @@ import com.finance.platform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.finance.platform.security.UserPrincipal;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,6 +23,7 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final AuditLogRepository auditLogRepository;
+    private final AuditLoggingService auditLoggingService;
 
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream()
@@ -34,6 +37,9 @@ public class AdminService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         user.setStatus(UserStatus.BLOCKED);
         userRepository.save(user);
+
+        UserPrincipal adminPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        auditLoggingService.logAction(adminPrincipal.getId(), "BLOCKED_USER_" + userId);
     }
 
     public List<AuditLog> getAuditLogs() {

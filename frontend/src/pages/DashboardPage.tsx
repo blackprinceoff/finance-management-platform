@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { observer } from "mobx-react-lite";
 import financeStore from "../stores/financeStore";
 import Header from "../components/Header";
+import { formatCurrency } from "../utils/formatUtils";
 
 function DashboardPage() {
   useEffect(() => {
@@ -9,16 +10,12 @@ function DashboardPage() {
     financeStore.fetchDashboardData(now.getMonth() + 1, now.getFullYear());
   }, []);
 
-  const formatCurrency = (amount: number) =>
-    `$${amount.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+
 
   const {
     dashboardSummary,
     budgetProgressList,
-    isLoading,
+    dashboardLoading,
     error,
   } = financeStore;
 
@@ -38,7 +35,7 @@ function DashboardPage() {
           </div>
         )}
 
-        {isLoading && !dashboardSummary ? (
+        {dashboardLoading && !dashboardSummary ? (
           <div className="py-20 text-center text-sm text-apple-400">
             Loading...
           </div>

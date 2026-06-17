@@ -1,5 +1,4 @@
 import { makeAutoObservable, runInAction } from "mobx";
-import axios from "axios";
 import type {
   Budget,
   BudgetRequest,
@@ -11,6 +10,8 @@ import type {
   GoalRequest,
   Income,
   IncomeRequest,
+  BudgetProgress,
+  DashboardSummary,
 } from "../types/finance";
 import * as budgetService from "../services/budgetService";
 import * as categoryService from "../services/categoryService";
@@ -18,7 +19,7 @@ import * as dashboardService from "../services/dashboardService";
 import * as expenseService from "../services/expenseService";
 import * as goalService from "../services/goalService";
 import * as incomeService from "../services/incomeService";
-import type { BudgetProgress, DashboardSummary } from "../types/finance";
+import { extractErrorMessage } from "../utils/errorUtils";
 
 class FinanceStore {
   budgets: Budget[] = [];
@@ -28,21 +29,34 @@ class FinanceStore {
   incomes: Income[] = [];
   dashboardSummary: DashboardSummary | null = null;
   budgetProgressList: BudgetProgress[] = [];
-  isLoading = false;
+
+  categoriesLoading = false;
+  expensesLoading = false;
+  incomesLoading = false;
+  budgetsLoading = false;
+  goalsLoading = false;
+  dashboardLoading = false;
+
   error: string | null = null;
 
   constructor() {
     makeAutoObservable(this);
   }
 
-  async fetchCategories(): Promise<boolean> {
-    this.isLoading = true;
+  /**
+   * Runs an async API call with standardized loading/error handling.
+   * `loadingKey` ties to a specific loading flag so concurrent fetches don't clobber each other.
+   */
+  private async run<T>(
+    loadingKey: "categoriesLoading" | "expensesLoading" | "incomesLoading" | "budgetsLoading" | "goalsLoading" | "dashboardLoading",
+    fn: () => Promise<T>,
+    onSuccess: (data: T) => void,
+  ): Promise<boolean> {
+    this[loadingKey] = true;
     this.error = null;
     try {
-      const data = await categoryService.getAll();
-      runInAction(() => {
-        this.categories = data;
-      });
+      const data = await fn();
+      runInAction(() => onSuccess(data));
       return true;
     } catch (e: unknown) {
       runInAction(() => {
@@ -51,459 +65,158 @@ class FinanceStore {
       return false;
     } finally {
       runInAction(() => {
-        this.isLoading = false;
+        this[loadingKey] = false;
       });
     }
   }
 
-  async createCategory(data: CategoryRequest): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const category = await categoryService.create(data);
-      runInAction(() => {
-        this.categories.unshift(category);
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  // ── Categories ──────────────────────────────────────────
+
+  fetchCategories() {
+    return this.run("categoriesLoading", () => categoryService.getAll(), (data) => {
+      this.categories = data;
+    });
   }
 
-  async updateCategory(id: number, data: CategoryRequest): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const updated = await categoryService.update(id, data);
-      runInAction(() => {
-        const index = this.categories.findIndex((c) => c.id === id);
-        if (index !== -1) {
-          this.categories[index] = updated;
-        }
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  createCategory(data: CategoryRequest) {
+    return this.run("categoriesLoading", () => categoryService.create(data), (created) => {
+      this.categories.unshift(created);
+    });
   }
 
-  async deleteCategory(id: number): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      await categoryService.remove(id);
-      runInAction(() => {
-        this.categories = this.categories.filter((c) => c.id !== id);
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  updateCategory(id: number, data: CategoryRequest) {
+    return this.run("categoriesLoading", () => categoryService.update(id, data), (updated) => {
+      const idx = this.categories.findIndex((c) => c.id === id);
+      if (idx !== -1) this.categories[idx] = updated;
+    });
   }
 
-  async fetchExpenses(categoryId?: number): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const data = await expenseService.getAll(categoryId);
-      runInAction(() => {
-        this.expenses = data;
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  deleteCategory(id: number) {
+    return this.run("categoriesLoading", () => categoryService.remove(id), () => {
+      this.categories = this.categories.filter((c) => c.id !== id);
+    });
   }
 
-  async createExpense(data: ExpenseRequest): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const expense = await expenseService.create(data);
-      runInAction(() => {
-        this.expenses.unshift(expense);
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  // ── Expenses ────────────────────────────────────────────
+
+  fetchExpenses(categoryId?: number) {
+    return this.run("expensesLoading", () => expenseService.getAll(categoryId), (data) => {
+      this.expenses = data;
+    });
   }
 
-  async updateExpense(id: number, data: ExpenseRequest): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const updated = await expenseService.update(id, data);
-      runInAction(() => {
-        const index = this.expenses.findIndex((e) => e.id === id);
-        if (index !== -1) {
-          this.expenses[index] = updated;
-        }
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  createExpense(data: ExpenseRequest) {
+    return this.run("expensesLoading", () => expenseService.create(data), (created) => {
+      this.expenses.unshift(created);
+    });
   }
 
-  async deleteExpense(id: number): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      await expenseService.remove(id);
-      runInAction(() => {
-        this.expenses = this.expenses.filter((e) => e.id !== id);
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  updateExpense(id: number, data: ExpenseRequest) {
+    return this.run("expensesLoading", () => expenseService.update(id, data), (updated) => {
+      const idx = this.expenses.findIndex((e) => e.id === id);
+      if (idx !== -1) this.expenses[idx] = updated;
+    });
   }
 
-  async fetchIncomes(categoryId?: number): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const data = await incomeService.getAll(categoryId);
-      runInAction(() => {
-        this.incomes = data;
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  deleteExpense(id: number) {
+    return this.run("expensesLoading", () => expenseService.remove(id), () => {
+      this.expenses = this.expenses.filter((e) => e.id !== id);
+    });
   }
 
-  async createIncome(data: IncomeRequest): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const income = await incomeService.create(data);
-      runInAction(() => {
-        this.incomes.unshift(income);
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  // ── Incomes ─────────────────────────────────────────────
+
+  fetchIncomes(categoryId?: number) {
+    return this.run("incomesLoading", () => incomeService.getAll(categoryId), (data) => {
+      this.incomes = data;
+    });
   }
 
-  async updateIncome(id: number, data: IncomeRequest): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const updated = await incomeService.update(id, data);
-      runInAction(() => {
-        const index = this.incomes.findIndex((i) => i.id === id);
-        if (index !== -1) {
-          this.incomes[index] = updated;
-        }
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  createIncome(data: IncomeRequest) {
+    return this.run("incomesLoading", () => incomeService.create(data), (created) => {
+      this.incomes.unshift(created);
+    });
   }
 
-  async deleteIncome(id: number): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      await incomeService.remove(id);
-      runInAction(() => {
-        this.incomes = this.incomes.filter((i) => i.id !== id);
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  updateIncome(id: number, data: IncomeRequest) {
+    return this.run("incomesLoading", () => incomeService.update(id, data), (updated) => {
+      const idx = this.incomes.findIndex((i) => i.id === id);
+      if (idx !== -1) this.incomes[idx] = updated;
+    });
   }
 
-  async fetchBudgets(): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const data = await budgetService.getAll();
-      runInAction(() => {
-        this.budgets = data;
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  deleteIncome(id: number) {
+    return this.run("incomesLoading", () => incomeService.remove(id), () => {
+      this.incomes = this.incomes.filter((i) => i.id !== id);
+    });
   }
 
-  async createBudget(data: BudgetRequest): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const budget = await budgetService.create(data);
-      runInAction(() => {
-        this.budgets.unshift(budget);
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  // ── Budgets ─────────────────────────────────────────────
+
+  fetchBudgets() {
+    return this.run("budgetsLoading", () => budgetService.getAll(), (data) => {
+      this.budgets = data;
+    });
   }
 
-  async updateBudget(id: number, data: BudgetRequest): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const updated = await budgetService.update(id, data);
-      runInAction(() => {
-        const index = this.budgets.findIndex((b) => b.id === id);
-        if (index !== -1) {
-          this.budgets[index] = updated;
-        }
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  createBudget(data: BudgetRequest) {
+    return this.run("budgetsLoading", () => budgetService.create(data), (created) => {
+      this.budgets.unshift(created);
+    });
   }
 
-  async deleteBudget(id: number): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      await budgetService.remove(id);
-      runInAction(() => {
-        this.budgets = this.budgets.filter((b) => b.id !== id);
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  updateBudget(id: number, data: BudgetRequest) {
+    return this.run("budgetsLoading", () => budgetService.update(id, data), (updated) => {
+      const idx = this.budgets.findIndex((b) => b.id === id);
+      if (idx !== -1) this.budgets[idx] = updated;
+    });
   }
 
-  async fetchGoals(): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const data = await goalService.getAll();
-      runInAction(() => {
-        this.goals = data;
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  deleteBudget(id: number) {
+    return this.run("budgetsLoading", () => budgetService.remove(id), () => {
+      this.budgets = this.budgets.filter((b) => b.id !== id);
+    });
   }
 
-  async createGoal(data: GoalRequest): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const goal = await goalService.create(data);
-      runInAction(() => {
-        this.goals.unshift(goal);
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  // ── Goals ───────────────────────────────────────────────
+
+  fetchGoals() {
+    return this.run("goalsLoading", () => goalService.getAll(), (data) => {
+      this.goals = data;
+    });
   }
 
-  async updateGoal(id: number, data: GoalRequest): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const updated = await goalService.update(id, data);
-      runInAction(() => {
-        const index = this.goals.findIndex((g) => g.id === id);
-        if (index !== -1) {
-          this.goals[index] = updated;
-        }
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  createGoal(data: GoalRequest) {
+    return this.run("goalsLoading", () => goalService.create(data), (created) => {
+      this.goals.unshift(created);
+    });
   }
 
-  async deleteGoal(id: number): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      await goalService.remove(id);
-      runInAction(() => {
-        this.goals = this.goals.filter((g) => g.id !== id);
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+  updateGoal(id: number, data: GoalRequest) {
+    return this.run("goalsLoading", () => goalService.update(id, data), (updated) => {
+      const idx = this.goals.findIndex((g) => g.id === id);
+      if (idx !== -1) this.goals[idx] = updated;
+    });
   }
 
-  async fetchDashboardData(month: number, year: number): Promise<boolean> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const [summary, progress] = await Promise.all([
-        dashboardService.getSummary(month, year),
-        dashboardService.getBudgetProgress(month, year),
-      ]);
-      runInAction(() => {
+  deleteGoal(id: number) {
+    return this.run("goalsLoading", () => goalService.remove(id), () => {
+      this.goals = this.goals.filter((g) => g.id !== id);
+    });
+  }
+
+  // ── Dashboard ───────────────────────────────────────────
+
+  fetchDashboardData(month: number, year: number) {
+    return this.run(
+      "dashboardLoading",
+      () => Promise.all([dashboardService.getSummary(month, year), dashboardService.getBudgetProgress(month, year)]),
+      ([summary, progress]) => {
         this.dashboardSummary = summary;
         this.budgetProgressList = progress;
-      });
-      return true;
-    } catch (e: unknown) {
-      runInAction(() => {
-        this.error = extractErrorMessage(e);
-      });
-      return false;
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    }
+      },
+    );
   }
-}
-
-function extractErrorMessage(e: unknown): string {
-  if (axios.isAxiosError<{ error?: string }>(e)) {
-    return e.response?.data?.error ?? e.message;
-  }
-  if (e instanceof Error) {
-    return e.message;
-  }
-  return "An unexpected error occurred";
 }
 
 const financeStore = new FinanceStore();

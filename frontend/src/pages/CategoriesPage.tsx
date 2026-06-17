@@ -149,7 +149,7 @@ function CategoriesPage() {
             </h2>
           </div>
 
-          {financeStore.isLoading && financeStore.categories.length === 0 ? (
+          {financeStore.categoriesLoading && financeStore.categories.length === 0 ? (
             <div className="px-6 py-12 text-center text-sm text-apple-400">
               Loading...
             </div>

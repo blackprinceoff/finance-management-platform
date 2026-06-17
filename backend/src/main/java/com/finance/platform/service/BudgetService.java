@@ -4,7 +4,9 @@ import com.finance.platform.dto.BudgetRequest;
 import com.finance.platform.dto.BudgetResponse;
 import com.finance.platform.entity.Budget;
 import com.finance.platform.entity.Category;
+import com.finance.platform.entity.CategoryType;
 import com.finance.platform.entity.User;
+import com.finance.platform.exception.BadRequestException;
 import com.finance.platform.exception.ResourceNotFoundException;
 import com.finance.platform.exception.UnauthorizedException;
 import com.finance.platform.repository.BudgetRepository;
@@ -46,6 +48,10 @@ public class BudgetService {
             throw new UnauthorizedException("You cannot use this category");
         }
 
+        if (category.getType() != CategoryType.EXPENSE) {
+            throw new BadRequestException("Budgets can only be created for EXPENSE categories");
+        }
+
         User userRef = userRepository.getReferenceById(userId);
 
         Budget budget = Budget.builder()
@@ -69,6 +75,10 @@ public class BudgetService {
 
         if (!category.isGlobal() && !category.getUser().getId().equals(userId)) {
             throw new UnauthorizedException("You cannot use this category");
+        }
+
+        if (category.getType() != CategoryType.EXPENSE) {
+            throw new BadRequestException("Budgets can only be created for EXPENSE categories");
         }
 
         budget.setAmount(request.amount());

@@ -4,6 +4,7 @@ import financeStore from "../stores/financeStore";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import Input from "../components/Input";
+import { formatCurrency, formatDate } from "../utils/formatUtils";
 
 interface FormState {
   name: string;
@@ -24,6 +25,7 @@ function emptyForm(): FormState {
 function GoalsPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [editingGoalId, setEditingGoalId] = useState<number | null>(null);
 
   useEffect(() => {
     financeStore.fetchGoals();
@@ -43,37 +45,49 @@ function GoalsPage() {
 
     setSubmitting(true);
     try {
-      const success = await financeStore.createGoal({
+      const payload = {
         name: form.name.trim(),
         targetAmount: Number(form.targetAmount),
         currentAmount: Number(form.currentAmount),
         deadline: form.deadline,
-      });
+      };
+
+      let success;
+      if (editingGoalId) {
+        success = await financeStore.updateGoal(editingGoalId, payload);
+      } else {
+        success = await financeStore.createGoal(payload);
+      }
 
       if (success) {
         setForm(emptyForm());
+        setEditingGoalId(null);
       }
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleEditClick = (goal: typeof financeStore.goals[0]) => {
+    setEditingGoalId(goal.id);
+    setForm({
+      name: goal.name,
+      targetAmount: String(goal.targetAmount),
+      currentAmount: String(goal.currentAmount),
+      deadline: goal.deadline,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingGoalId(null);
+    setForm(emptyForm());
+  };
+
   const handleDelete = async (id: number) => {
     await financeStore.deleteGoal(id);
   };
 
-  const formatCurrency = (amount: number) =>
-    `$${amount.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
 
   return (
     <div className="min-h-screen bg-apple-50">
@@ -91,7 +105,7 @@ function GoalsPage() {
           className="mt-6 rounded-2xl bg-white p-6 shadow-sm"
         >
           <h2 className="text-base font-semibold text-apple-900">
-            Add Goal
+            {editingGoalId ? "Edit Goal" : "Add Goal"}
           </h2>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Input
@@ -129,9 +143,14 @@ function GoalsPage() {
               required
             />
           </div>
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex justify-end gap-3">
+            {editingGoalId && (
+              <Button type="button" onClick={handleCancelEdit} variant="secondary">
+                Cancel
+              </Button>
+            )}
             <Button type="submit" isLoading={submitting}>
-              Add Goal
+              {editingGoalId ? "Update Goal" : "Add Goal"}
             </Button>
           </div>
         </form>
@@ -141,7 +160,7 @@ function GoalsPage() {
             <h2 className="text-base font-semibold text-apple-900">Goals</h2>
           </div>
 
-          {financeStore.isLoading && sortedGoals.length === 0 ? (
+          {financeStore.goalsLoading && sortedGoals.length === 0 ? (
             <div className="px-6 py-12 text-center text-sm text-apple-400">
               Loading...
             </div>
@@ -191,25 +210,46 @@ function GoalsPage() {
                         {Math.round(progress)}%
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(g.id)}
-                      className="ml-4 rounded-full p-2 text-apple-300 transition-colors hover:bg-red-50 hover:text-red-500"
-                      aria-label="Delete goal"
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleEditClick(g)}
+                        className="rounded-full p-2 text-apple-300 transition-colors hover:bg-apple-100 hover:text-apple-600"
+                        aria-label="Edit goal"
                       >
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      </svg>
-                    </button>
+                        <svg
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(g.id)}
+                        className="rounded-full p-2 text-apple-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                        aria-label="Delete goal"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
+                    </div>
                   </li>
                 );
               })}

@@ -16,7 +16,7 @@ public record BudgetRequest(
         @Min(1) @Max(12) int month,
 
         @Schema(example = "2026")
-        int year,
+        @Min(2020) int year,
 
         @Schema(example = "1")
         @NotNull Long categoryId

@@ -4,6 +4,7 @@ import financeStore from "../stores/financeStore";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import Input from "../components/Input";
+import { formatCurrency, formatDate } from "../utils/formatUtils";
 
 type Tab = "expense" | "income";
 
@@ -93,18 +94,7 @@ function TransactionsPage() {
     }
   };
 
-  const formatCurrency = (amount: number) =>
-    `$${amount.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
 
   return (
     <div className="min-h-screen bg-apple-50">
@@ -222,7 +212,7 @@ function TransactionsPage() {
             </h2>
           </div>
 
-          {financeStore.isLoading && sortedTransactions.length === 0 ? (
+          {financeStore.expensesLoading && sortedTransactions.length === 0 ? (
             <div className="px-6 py-12 text-center text-sm text-apple-400">
               Loading...
             </div>

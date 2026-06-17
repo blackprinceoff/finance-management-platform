@@ -4,6 +4,7 @@ import financeStore from "../stores/financeStore";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import Input from "../components/Input";
+import { formatCurrency } from "../utils/formatUtils";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -69,11 +70,7 @@ function BudgetsPage() {
     await financeStore.deleteBudget(id);
   };
 
-  const formatCurrency = (amount: number) =>
-    `$${amount.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+
 
   const formatMonthYear = (month: number, year: number) =>
     `${MONTH_NAMES[month - 1]} ${year}`;
@@ -146,7 +143,9 @@ function BudgetsPage() {
                 className="w-full rounded-apple border border-apple-200 bg-white px-4 py-3 text-sm text-apple-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-apple-blue"
               >
                 <option value="">Select...</option>
-                {financeStore.categories.map((c) => (
+                {financeStore.categories
+                  .filter((c) => c.type === "EXPENSE")
+                  .map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
@@ -168,7 +167,7 @@ function BudgetsPage() {
             </h2>
           </div>
 
-          {financeStore.isLoading && sortedBudgets.length === 0 ? (
+          {financeStore.budgetsLoading && sortedBudgets.length === 0 ? (
             <div className="px-6 py-12 text-center text-sm text-apple-400">
               Loading...
             </div>

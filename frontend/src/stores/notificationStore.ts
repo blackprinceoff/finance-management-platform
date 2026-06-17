@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from "mobx";
-import axios from "axios";
 import * as notificationService from "../services/notificationService";
+import { extractErrorMessage } from "../utils/errorUtils";
 import type { Notification } from "../types/finance";
 
 class NotificationStore {
@@ -55,16 +55,6 @@ class NotificationStore {
       return false;
     }
   }
-}
-
-function extractErrorMessage(e: unknown): string {
-  if (axios.isAxiosError<{ error?: string }>(e)) {
-    return e.response?.data?.error ?? e.message;
-  }
-  if (e instanceof Error) {
-    return e.message;
-  }
-  return "An unexpected error occurred";
 }
 
 const notificationStore = new NotificationStore();

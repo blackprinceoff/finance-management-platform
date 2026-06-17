@@ -5,6 +5,8 @@ import com.finance.platform.dto.IncomeResponse;
 import com.finance.platform.entity.Category;
 import com.finance.platform.entity.Income;
 import com.finance.platform.entity.User;
+import com.finance.platform.entity.CategoryType;
+import com.finance.platform.exception.BadRequestException;
 import com.finance.platform.exception.ResourceNotFoundException;
 import com.finance.platform.exception.UnauthorizedException;
 import com.finance.platform.repository.CategoryRepository;
@@ -54,6 +56,10 @@ public class IncomeService {
             throw new UnauthorizedException("You cannot use this category");
         }
 
+        if (category.getType() != CategoryType.INCOME) {
+            throw new BadRequestException("Category must be of type INCOME");
+        }
+
         User userRef = userRepository.getReferenceById(userId);
 
         Income income = Income.builder()
@@ -77,6 +83,10 @@ public class IncomeService {
 
         if (!category.isGlobal() && !category.getUser().getId().equals(userId)) {
             throw new UnauthorizedException("You cannot use this category");
+        }
+
+        if (category.getType() != CategoryType.INCOME) {
+            throw new BadRequestException("Category must be of type INCOME");
         }
 
         income.setAmount(request.amount());
