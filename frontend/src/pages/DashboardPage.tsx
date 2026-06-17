@@ -1,22 +1,13 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import financeStore from "../stores/financeStore";
-import authStore from "../stores/authStore";
-import Button from "../components/Button";
+import Header from "../components/Header";
 
 function DashboardPage() {
-  const navigate = useNavigate();
-
   useEffect(() => {
     const now = new Date();
     financeStore.fetchDashboardData(now.getMonth() + 1, now.getFullYear());
   }, []);
-
-  const handleLogout = () => {
-    authStore.logout();
-    navigate("/auth");
-  };
 
   const formatCurrency = (amount: number) =>
     `$${amount.toLocaleString("en-US", {
@@ -38,46 +29,7 @@ function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-apple-50">
-      <header className="flex items-center justify-between border-b border-apple-200 bg-white px-6 py-4">
-        <span className="text-lg font-semibold text-apple-900">
-          Finance Platform
-        </span>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="text-sm font-medium text-apple-blue transition-colors hover:text-apple-blue-hover"
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => navigate("/transactions")}
-            className="text-sm font-medium text-apple-500 transition-colors hover:text-apple-900"
-          >
-            Transactions
-          </button>
-          <button
-            onClick={() => navigate("/budgets")}
-            className="text-sm font-medium text-apple-500 transition-colors hover:text-apple-900"
-          >
-            Budgets
-          </button>
-          <button
-            onClick={() => navigate("/goals")}
-            className="text-sm font-medium text-apple-500 transition-colors hover:text-apple-900"
-          >
-            Goals
-          </button>
-          <button
-            onClick={() => navigate("/categories")}
-            className="text-sm font-medium text-apple-500 transition-colors hover:text-apple-900"
-          >
-            Categories
-          </button>
-          <Button variant="secondary" onClick={handleLogout}>
-            Logout
-          </Button>
-        </div>
-      </header>
+      <Header currentPage="dashboard" />
 
       <main className="mx-auto max-w-5xl px-4 py-8">
         {error && (

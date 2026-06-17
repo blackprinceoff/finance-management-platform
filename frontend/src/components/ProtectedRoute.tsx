@@ -6,12 +6,14 @@ import authStore from "../stores/authStore";
 interface ProtectedRouteProps {
   children: ReactNode;
   requireAuth?: boolean;
+  requireAdmin?: boolean;
   redirectTo?: string;
 }
 
 function ProtectedRoute({
   children,
   requireAuth = true,
+  requireAdmin = false,
   redirectTo = "/auth",
 }: ProtectedRouteProps) {
   const hasToken = authStore.token !== null;
@@ -21,6 +23,10 @@ function ProtectedRoute({
   }
 
   if (!requireAuth && hasToken) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (requireAdmin && !authStore.isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
 

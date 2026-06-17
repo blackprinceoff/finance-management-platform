@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import financeStore from "../stores/financeStore";
 import authStore from "../stores/authStore";
+import Header from "../components/Header";
 import Button from "../components/Button";
 import Input from "../components/Input";
 import type { CategoryType } from "../types/finance";
@@ -22,7 +22,6 @@ function emptyForm(): FormState {
 }
 
 function CategoriesPage() {
-  const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
 
@@ -61,11 +60,6 @@ function CategoriesPage() {
     await financeStore.deleteCategory(id);
   };
 
-  const handleLogout = () => {
-    authStore.logout();
-    navigate("/auth");
-  };
-
   const typeBadge = (type: CategoryType) => {
     const isIncome = type === "INCOME";
     return (
@@ -83,46 +77,7 @@ function CategoriesPage() {
 
   return (
     <div className="min-h-screen bg-apple-50">
-      <header className="flex items-center justify-between border-b border-apple-200 bg-white px-6 py-4">
-        <span className="text-lg font-semibold text-apple-900">
-          Finance Platform
-        </span>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="text-sm font-medium text-apple-500 transition-colors hover:text-apple-900"
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => navigate("/transactions")}
-            className="text-sm font-medium text-apple-500 transition-colors hover:text-apple-900"
-          >
-            Transactions
-          </button>
-          <button
-            onClick={() => navigate("/budgets")}
-            className="text-sm font-medium text-apple-500 transition-colors hover:text-apple-900"
-          >
-            Budgets
-          </button>
-          <button
-            onClick={() => navigate("/goals")}
-            className="text-sm font-medium text-apple-500 transition-colors hover:text-apple-900"
-          >
-            Goals
-          </button>
-          <button
-            onClick={() => navigate("/categories")}
-            className="text-sm font-medium text-apple-blue transition-colors hover:text-apple-blue-hover"
-          >
-            Categories
-          </button>
-          <Button variant="secondary" onClick={handleLogout}>
-            Logout
-          </Button>
-        </div>
-      </header>
+      <Header currentPage="categories" />
 
       <main className="mx-auto max-w-5xl px-4 py-8">
         {financeStore.error && (
@@ -164,19 +119,21 @@ function CategoriesPage() {
             </div>
           </div>
 
-          <label className="mt-4 flex cursor-pointer items-center gap-3">
-            <input
-              type="checkbox"
-              checked={form.isGlobal}
-              onChange={(e) =>
-                handleFormChange("isGlobal", e.target.checked)
-              }
-              className="h-4 w-4 rounded border-apple-300 text-apple-blue focus:ring-apple-blue"
-            />
-            <span className="text-sm text-apple-700">
-              Create as Global Category
-            </span>
-          </label>
+          {authStore.isAdmin && (
+            <label className="mt-4 flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={form.isGlobal}
+                onChange={(e) =>
+                  handleFormChange("isGlobal", e.target.checked)
+                }
+                className="h-4 w-4 rounded border-apple-300 text-apple-blue focus:ring-apple-blue"
+              />
+              <span className="text-sm text-apple-700">
+                Create as Global Category
+              </span>
+            </label>
+          )}
 
           <div className="mt-4 flex justify-end">
             <Button type="submit" isLoading={submitting}>

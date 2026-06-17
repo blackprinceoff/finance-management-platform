@@ -1,15 +1,40 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import * as authService from "../services/authService";
-import type { ErrorResponse, LoginRequest, RegisterRequest } from "../types/auth";
+import type { ErrorResponse, JwtPayload, LoginRequest, RegisterRequest } from "../types/auth";
 
 class AuthStore {
   token: string | null = localStorage.getItem("token");
+  roles: string[] = JSON.parse(localStorage.getItem("roles") ?? "[]");
   isLoading = false;
   error: string | null = null;
 
   constructor() {
     makeAutoObservable(this);
+  }
+
+  get isAdmin(): boolean {
+    return this.roles.includes("ROLE_ADMIN");
+  }
+
+  private setToken(token: string) {
+    this.token = token;
+    localStorage.setItem("token", token);
+    try {
+      const decoded = jwtDecode<JwtPayload>(token);
+      this.roles = decoded.roles ?? [];
+    } catch {
+      this.roles = [];
+    }
+    localStorage.setItem("roles", JSON.stringify(this.roles));
+  }
+
+  private clearAuth() {
+    this.token = null;
+    this.roles = [];
+    localStorage.removeItem("token");
+    localStorage.removeItem("roles");
   }
 
   async login(data: LoginRequest): Promise<boolean> {
@@ -18,9 +43,8 @@ class AuthStore {
     try {
       const response = await authService.login(data);
       runInAction(() => {
-        this.token = response.token;
+        this.setToken(response.token);
       });
-      localStorage.setItem("token", response.token);
       return true;
     } catch (e) {
       runInAction(() => {
@@ -40,9 +64,8 @@ class AuthStore {
     try {
       const response = await authService.register(data);
       runInAction(() => {
-        this.token = response.token;
+        this.setToken(response.token);
       });
-      localStorage.setItem("token", response.token);
       return true;
     } catch (e) {
       runInAction(() => {
@@ -57,8 +80,7 @@ class AuthStore {
   }
 
   logout(): void {
-    this.token = null;
-    localStorage.removeItem("token");
+    this.clearAuth();
   }
 }
 
