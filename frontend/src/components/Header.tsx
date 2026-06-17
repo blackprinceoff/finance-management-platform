@@ -1,6 +1,8 @@
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import authStore from "../stores/authStore";
+import notificationStore from "../stores/notificationStore";
 import Button from "./Button";
 
 interface HeaderProps {
@@ -17,10 +19,46 @@ const NAV_ITEMS = [
 
 function Header({ currentPage }: HeaderProps) {
   const navigate = useNavigate();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    notificationStore.fetchNotifications();
+  }, []);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [dropdownOpen]);
 
   const handleLogout = () => {
     authStore.logout();
     navigate("/auth");
+  };
+
+  const handleNotificationClick = (id: number, isRead: boolean) => {
+    if (!isRead) {
+      notificationStore.markAsRead(id);
+    }
+  };
+
+  const formatTimestamp = (ts: string) => {
+    const d = new Date(ts);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
   };
 
   return (
@@ -54,6 +92,81 @@ function Header({ currentPage }: HeaderProps) {
             Admin Panel
           </button>
         )}
+
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setDropdownOpen((prev) => !prev)}
+            className="relative rounded-full p-2 text-apple-500 transition-colors hover:bg-apple-100 hover:text-apple-900"
+            aria-label="Notifications"
+          >
+            <svg
+              className="h-5 w-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            {notificationStore.unreadCount > 0 && (
+              <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold leading-none text-white">
+                {notificationStore.unreadCount > 9
+                  ? "9+"
+                  : notificationStore.unreadCount}
+              </span>
+            )}
+          </button>
+
+          {dropdownOpen && (
+            <div className="absolute right-0 z-50 mt-2 w-80 rounded-2xl border border-apple-100 bg-white shadow-lg">
+              <div className="border-b border-apple-100 px-5 py-3">
+                <p className="text-sm font-semibold text-apple-900">
+                  Notifications
+                </p>
+              </div>
+              <div className="max-h-72 overflow-y-auto">
+                {notificationStore.notifications.length === 0 ? (
+                  <div className="px-5 py-8 text-center text-sm text-apple-400">
+                    No notifications yet.
+                  </div>
+                ) : (
+                  notificationStore.notifications.map((n) => (
+                    <button
+                      key={n.id}
+                      onClick={() => handleNotificationClick(n.id, n.isRead)}
+                      className={`flex w-full items-start gap-3 px-5 py-3 text-left transition-colors hover:bg-apple-50 ${
+                        !n.isRead ? "bg-apple-50/50" : ""
+                      }`}
+                    >
+                      {!n.isRead && (
+                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-apple-blue" />
+                      )}
+                      {n.isRead && <span className="mt-1.5 h-2 w-2 shrink-0" />}
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`text-sm ${
+                            !n.isRead
+                              ? "font-semibold text-apple-900"
+                              : "text-apple-500"
+                          }`}
+                        >
+                          {n.message}
+                        </p>
+                        <p className="mt-0.5 text-xs text-apple-400">
+                          {formatTimestamp(n.createdAt)}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         <Button variant="secondary" onClick={handleLogout}>
           Logout
         </Button>

@@ -94,3 +94,10 @@ export interface BudgetProgress {
   remainingAmount: number;
   isExceeded: boolean;
 }
+
+export interface Notification {
+  id: number;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
