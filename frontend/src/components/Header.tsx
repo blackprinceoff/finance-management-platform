@@ -62,11 +62,14 @@ function Header({ currentPage }: HeaderProps) {
   };
 
   return (
-    <header className="flex items-center justify-between border-b border-apple-200 bg-white px-6 py-4">
-      <span className="text-lg font-semibold text-apple-900">
-        Finance Platform
-      </span>
-      <div className="flex items-center gap-4">
+    <header className="grid grid-cols-3 items-center border-b border-apple-200 bg-white px-6 py-4">
+      <div className="flex justify-start">
+        <span className="text-lg font-semibold text-apple-900">
+          Finance Platform
+        </span>
+      </div>
+
+      <nav className="flex items-center justify-center gap-6">
         {NAV_ITEMS.map((item) => (
           <button
             key={item.path}
@@ -92,7 +95,9 @@ function Header({ currentPage }: HeaderProps) {
             Admin Panel
           </button>
         )}
+      </nav>
 
+      <div className="flex items-center justify-end gap-4">
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen((prev) => !prev)}
@@ -121,7 +126,7 @@ function Header({ currentPage }: HeaderProps) {
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 z-50 mt-2 w-80 rounded-2xl border border-apple-100 bg-white shadow-lg">
+            <div className="absolute right-0 z-50 mt-2 w-80 animate-in fade-in slide-in-from-top-2 rounded-2xl border border-apple-100 bg-white shadow-xl">
               <div className="border-b border-apple-100 px-5 py-3">
                 <p className="text-sm font-semibold text-apple-900">
                   Notifications

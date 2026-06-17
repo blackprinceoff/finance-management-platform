@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
-import { observer } from "mobx-react-lite";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import * as adminService from "../services/adminService";
 import type { AdminUser, AuditLog } from "../types/admin";
+import { toast } from "react-hot-toast";
 
 function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [blockingId, setBlockingId] = useState<number | null>(null);
+  const [actionId, setActionId] = useState<number | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -34,16 +34,32 @@ function AdminPage() {
   }, []);
 
   const handleBlock = async (id: number) => {
-    setBlockingId(id);
+    setActionId(id);
     try {
       await adminService.blockUser(id);
       setUsers((prev) =>
         prev.map((u) => (u.id === id ? { ...u, status: "BLOCKED" as const } : u)),
       );
+      toast.success("User blocked successfully");
     } catch {
       setError("Failed to block user.");
     } finally {
-      setBlockingId(null);
+      setActionId(null);
+    }
+  };
+
+  const handleUnblock = async (id: number) => {
+    setActionId(id);
+    try {
+      await adminService.unblockUser(id);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, status: "ACTIVE" as const } : u)),
+      );
+      toast.success("User unblocked successfully");
+    } catch {
+      setError("Failed to unblock user.");
+    } finally {
+      setActionId(null);
     }
   };
 
@@ -125,16 +141,25 @@ function AdminPage() {
                         {user.roles.join(", ")}
                       </td>
                       <td className="px-6 py-4">
-                        {user.status === "ACTIVE" ? (
+                        {user.status === "ACTIVE" && (
                           <Button
                             variant="secondary"
-                            isLoading={blockingId === user.id}
+                            isLoading={actionId === user.id}
                             onClick={() => handleBlock(user.id)}
+                            className="!bg-red-50 !text-red-600 hover:!bg-red-100"
                           >
                             Block
                           </Button>
-                        ) : (
-                          <span className="text-sm text-apple-400">—</span>
+                        )}
+                        {user.status === "BLOCKED" && (
+                          <Button
+                            variant="secondary"
+                            isLoading={actionId === user.id}
+                            onClick={() => handleUnblock(user.id)}
+                            className="!bg-green-50 !text-green-700 hover:!bg-green-100"
+                          >
+                            Unblock
+                          </Button>
                         )}
                       </td>
                     </tr>
@@ -199,4 +224,4 @@ function AdminPage() {
   );
 }
 
-export default observer(AdminPage);
+export default AdminPage;

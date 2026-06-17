@@ -33,6 +33,12 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/users/{id}/unblock")
+    public ResponseEntity<Void> unblockUser(@PathVariable Long id) {
+        adminService.unblockUser(id);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/audit-logs")
     public ResponseEntity<List<AuditLog>> getAuditLogs() {
         return ResponseEntity.ok(adminService.getAuditLogs());

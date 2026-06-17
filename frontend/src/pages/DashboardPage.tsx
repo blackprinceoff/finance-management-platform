@@ -3,16 +3,13 @@ import { observer } from "mobx-react-lite";
 import financeStore from "../stores/financeStore";
 import Header from "../components/Header";
 import { formatCurrency } from "../utils/formatUtils";
+import ErrorBanner from "../components/ErrorBanner";
 
 function DashboardPage() {
   useEffect(() => {
     const now = new Date();
     financeStore.fetchDashboardData(now.getMonth() + 1, now.getFullYear());
-  }, []);
-
-
-
-  const {
+  }, []);  const {
     dashboardSummary,
     budgetProgressList,
     dashboardLoading,
@@ -29,11 +26,7 @@ function DashboardPage() {
       <Header currentPage="dashboard" />
 
       <main className="mx-auto max-w-5xl px-4 py-8">
-        {error && (
-          <div className="mb-6 rounded-xl bg-red-50 px-5 py-4">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
+        <ErrorBanner message={error} />
 
         {dashboardLoading && !dashboardSummary ? (
           <div className="py-20 text-center text-sm text-apple-400">

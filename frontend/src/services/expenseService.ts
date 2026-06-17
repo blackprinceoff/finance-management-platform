@@ -19,5 +19,5 @@ export function update(id: number, data: ExpenseRequest): Promise<Expense> {
 }
 
 export function remove(id: number): Promise<void> {
-  return api.delete(`/expenses/${id}`);
+  return api.delete(`/expenses/${id}`).then(() => {});
 }

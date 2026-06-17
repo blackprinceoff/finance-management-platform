@@ -5,6 +5,11 @@ import Header from "../components/Header";
 import Button from "../components/Button";
 import Input from "../components/Input";
 import { formatCurrency, formatDate } from "../utils/formatUtils";
+import { toast } from "react-hot-toast";
+import Select from "../components/Select";
+import ErrorBanner from "../components/ErrorBanner";
+import ConfirmModal from "../components/ConfirmModal";
+import { TrashIcon } from "../components/Icons";
 
 type Tab = "expense" | "income";
 
@@ -28,6 +33,7 @@ function TransactionsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("expense");
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     financeStore.fetchCategories();
@@ -80,21 +86,24 @@ function TransactionsPage() {
 
       if (success) {
         setForm(emptyForm());
+        toast.success(`Successfully added ${activeTab}`);
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const confirmDelete = async () => {
+    if (transactionToDelete === null) return;
+    
     if (activeTab === "expense") {
-      await financeStore.deleteExpense(id);
+      await financeStore.deleteExpense(transactionToDelete);
     } else {
-      await financeStore.deleteIncome(id);
+      await financeStore.deleteIncome(transactionToDelete);
     }
+    setTransactionToDelete(null);
+    toast.success("Transaction deleted");
   };
-
-
 
   return (
     <div className="min-h-screen bg-apple-50">
@@ -118,11 +127,7 @@ function TransactionsPage() {
           </div>
         </div>
 
-        {financeStore.error && (
-          <div className="mt-6 rounded-xl bg-red-50 px-5 py-4">
-            <p className="text-sm text-red-600">{financeStore.error}</p>
-          </div>
-        )}
+        <ErrorBanner message={financeStore.error} />
 
         <div className="mt-8 flex w-fit items-center gap-2 rounded-full bg-apple-100 p-1">
           <button
@@ -179,24 +184,16 @@ function TransactionsPage() {
               onChange={(e) => handleFormChange("date", e.target.value)}
               required
             />
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-apple-700">
-                Category
-              </label>
-              <select
-                value={form.categoryId}
-                onChange={(e) => handleFormChange("categoryId", e.target.value)}
-                required
-                className="w-full rounded-apple border border-apple-200 bg-white px-4 py-3 text-sm text-apple-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-apple-blue"
-              >
-                <option value="">Select...</option>
-                {filteredCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Category"
+              value={form.categoryId}
+              onChange={(e) => handleFormChange("categoryId", e.target.value)}
+              required
+              options={filteredCategories.map((c) => ({
+                value: c.id.toString(),
+                label: c.name,
+              }))}
+            />
           </div>
           <div className="mt-4 flex justify-end">
             <Button type="submit" isLoading={submitting}>
@@ -212,7 +209,7 @@ function TransactionsPage() {
             </h2>
           </div>
 
-          {financeStore.expensesLoading && sortedTransactions.length === 0 ? (
+          {(activeTab === "expense" ? financeStore.expensesLoading : financeStore.incomesLoading) && sortedTransactions.length === 0 ? (
             <div className="px-6 py-12 text-center text-sm text-apple-400">
               Loading...
             </div>
@@ -249,22 +246,11 @@ function TransactionsPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleDelete(t.id)}
+                    onClick={() => setTransactionToDelete(t.id)}
                     className="ml-4 rounded-full p-2 text-apple-300 transition-colors hover:bg-red-50 hover:text-red-500"
                     aria-label="Delete"
                   >
-                    <svg
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
+                    <TrashIcon className="h-4 w-4" />
                   </button>
                 </li>
               ))}
@@ -272,6 +258,14 @@ function TransactionsPage() {
           )}
         </div>
       </main>
+
+      <ConfirmModal
+        isOpen={transactionToDelete !== null}
+        title={`Delete ${activeTab === "expense" ? "Expense" : "Income"}`}
+        message="Are you sure you want to delete this transaction? This action cannot be undone."
+        onConfirm={confirmDelete}
+        onCancel={() => setTransactionToDelete(null)}
+      />
     </div>
   );
 }

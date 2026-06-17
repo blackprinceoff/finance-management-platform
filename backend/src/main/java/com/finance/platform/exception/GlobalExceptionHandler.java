@@ -49,7 +49,7 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException ex) {
         Map<String, String> errors = ex.getBindingResult().getFieldErrors().stream()
                 .collect(Collectors.toMap(
-                        e -> e.getField(),
+                        org.springframework.validation.FieldError::getField,
                         e -> e.getDefaultMessage() != null ? e.getDefaultMessage() : "Invalid value"
                 ));
         return ResponseEntity.badRequest().body(errors);

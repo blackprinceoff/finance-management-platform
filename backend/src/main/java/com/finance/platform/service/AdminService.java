@@ -42,6 +42,17 @@ public class AdminService {
         auditLoggingService.logAction(adminPrincipal.getId(), "BLOCKED_USER_" + userId);
     }
 
+    @Transactional
+    public void unblockUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        user.setStatus(UserStatus.ACTIVE);
+        userRepository.save(user);
+
+        UserPrincipal adminPrincipal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        auditLoggingService.logAction(adminPrincipal.getId(), "UNBLOCKED_USER_" + userId);
+    }
+
     public List<AuditLog> getAuditLogs() {
         return auditLogRepository.findAll();
     }

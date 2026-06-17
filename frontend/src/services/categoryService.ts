@@ -18,5 +18,5 @@ export function update(id: number, data: CategoryRequest): Promise<Category> {
 }
 
 export function remove(id: number): Promise<void> {
-  return api.delete(`/categories/${id}`);
+  return api.delete(`/categories/${id}`).then(() => {});
 }

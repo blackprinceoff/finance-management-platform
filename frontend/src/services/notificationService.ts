@@ -6,5 +6,5 @@ export function getAll(): Promise<Notification[]> {
 }
 
 export function markAsRead(id: number): Promise<void> {
-  return api.put(`/notifications/${id}/read`);
+  return api.put(`/notifications/${id}/read`).then(() => {});
 }

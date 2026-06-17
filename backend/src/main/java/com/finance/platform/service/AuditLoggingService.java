@@ -24,12 +24,7 @@ public class AuditLoggingService {
         
         if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes) {
             HttpServletRequest request = attributes.getRequest();
-            String xfHeader = request.getHeader("X-Forwarded-For");
-            if (xfHeader == null) {
-                ipAddress = request.getRemoteAddr();
-            } else {
-                ipAddress = xfHeader.split(",")[0];
-            }
+            ipAddress = resolveClientIp(request);
         }
 
         AuditLog auditLog = AuditLog.builder()
@@ -40,5 +35,22 @@ public class AuditLoggingService {
                 .build();
 
         auditLogRepository.save(auditLog);
+    }
+
+    private String resolveClientIp(HttpServletRequest request) {
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            String firstIp = xForwardedFor.split(",")[0].trim();
+            if (!firstIp.isEmpty() && !"unknown".equalsIgnoreCase(firstIp)) {
+                return firstIp;
+            }
+        }
+
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
+            return xRealIp.trim();
+        }
+
+        return request.getRemoteAddr();
     }
 }

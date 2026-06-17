@@ -5,6 +5,10 @@ import Header from "../components/Header";
 import Button from "../components/Button";
 import Input from "../components/Input";
 import { formatCurrency, formatDate } from "../utils/formatUtils";
+import { toast } from "react-hot-toast";
+import ErrorBanner from "../components/ErrorBanner";
+import ConfirmModal from "../components/ConfirmModal";
+import { TrashIcon, EditIcon } from "../components/Icons";
 
 interface FormState {
   name: string;
@@ -26,6 +30,7 @@ function GoalsPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [editingGoalId, setEditingGoalId] = useState<number | null>(null);
+  const [goalToDelete, setGoalToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     financeStore.fetchGoals();
@@ -53,7 +58,7 @@ function GoalsPage() {
       };
 
       let success;
-      if (editingGoalId) {
+      if (editingGoalId !== null) {
         success = await financeStore.updateGoal(editingGoalId, payload);
       } else {
         success = await financeStore.createGoal(payload);
@@ -62,6 +67,7 @@ function GoalsPage() {
       if (success) {
         setForm(emptyForm());
         setEditingGoalId(null);
+        toast.success(editingGoalId !== null ? "Goal updated" : "Goal added");
       }
     } finally {
       setSubmitting(false);
@@ -83,29 +89,26 @@ function GoalsPage() {
     setForm(emptyForm());
   };
 
-  const handleDelete = async (id: number) => {
-    await financeStore.deleteGoal(id);
+  const confirmDelete = async () => {
+    if (goalToDelete === null) return;
+    await financeStore.deleteGoal(goalToDelete);
+    setGoalToDelete(null);
+    toast.success("Goal deleted");
   };
-
-
 
   return (
     <div className="min-h-screen bg-apple-50">
       <Header currentPage="goals" />
 
       <main className="mx-auto max-w-5xl px-4 py-8">
-        {financeStore.error && (
-          <div className="rounded-xl bg-red-50 px-5 py-4">
-            <p className="text-sm text-red-600">{financeStore.error}</p>
-          </div>
-        )}
+        <ErrorBanner message={financeStore.error} />
 
         <form
           onSubmit={handleSubmit}
           className="mt-6 rounded-2xl bg-white p-6 shadow-sm"
         >
           <h2 className="text-base font-semibold text-apple-900">
-            {editingGoalId ? "Edit Goal" : "Add Goal"}
+            {editingGoalId !== null ? "Edit Goal" : "Add Goal"}
           </h2>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Input
@@ -144,13 +147,13 @@ function GoalsPage() {
             />
           </div>
           <div className="mt-4 flex justify-end gap-3">
-            {editingGoalId && (
+            {editingGoalId !== null && (
               <Button type="button" onClick={handleCancelEdit} variant="secondary">
                 Cancel
               </Button>
             )}
             <Button type="submit" isLoading={submitting}>
-              {editingGoalId ? "Update Goal" : "Add Goal"}
+              {editingGoalId !== null ? "Update Goal" : "Add Goal"}
             </Button>
           </div>
         </form>
@@ -217,37 +220,15 @@ function GoalsPage() {
                         className="rounded-full p-2 text-apple-300 transition-colors hover:bg-apple-100 hover:text-apple-600"
                         aria-label="Edit goal"
                       >
-                        <svg
-                          className="h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                        </svg>
+                        <EditIcon className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(g.id)}
+                        onClick={() => setGoalToDelete(g.id)}
                         className="rounded-full p-2 text-apple-300 transition-colors hover:bg-red-50 hover:text-red-500"
                         aria-label="Delete goal"
                       >
-                        <svg
-                          className="h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
+                        <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
                   </li>
@@ -257,6 +238,14 @@ function GoalsPage() {
           )}
         </div>
       </main>
+
+      <ConfirmModal
+        isOpen={goalToDelete !== null}
+        title="Delete Goal"
+        message="Are you sure you want to delete this goal? This action cannot be undone."
+        onConfirm={confirmDelete}
+        onCancel={() => setGoalToDelete(null)}
+      />
     </div>
   );
 }

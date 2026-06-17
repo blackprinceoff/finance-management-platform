@@ -5,6 +5,11 @@ import Header from "../components/Header";
 import Button from "../components/Button";
 import Input from "../components/Input";
 import { formatCurrency } from "../utils/formatUtils";
+import { toast } from "react-hot-toast";
+import Select from "../components/Select";
+import ErrorBanner from "../components/ErrorBanner";
+import ConfirmModal from "../components/ConfirmModal";
+import { TrashIcon } from "../components/Icons";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -30,6 +35,7 @@ function emptyForm(): FormState {
 function BudgetsPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const [budgetToDelete, setBudgetToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     financeStore.fetchBudgets();
@@ -60,17 +66,19 @@ function BudgetsPage() {
 
       if (success) {
         setForm(emptyForm());
+        toast.success("Budget added successfully");
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    await financeStore.deleteBudget(id);
+  const confirmDelete = async () => {
+    if (budgetToDelete === null) return;
+    await financeStore.deleteBudget(budgetToDelete);
+    setBudgetToDelete(null);
+    toast.success("Budget deleted");
   };
-
-
 
   const formatMonthYear = (month: number, year: number) =>
     `${MONTH_NAMES[month - 1]} ${year}`;
@@ -80,11 +88,7 @@ function BudgetsPage() {
       <Header currentPage="budgets" />
 
       <main className="mx-auto max-w-5xl px-4 py-8">
-        {financeStore.error && (
-          <div className="rounded-xl bg-red-50 px-5 py-4">
-            <p className="text-sm text-red-600">{financeStore.error}</p>
-          </div>
-        )}
+        <ErrorBanner message={financeStore.error} />
 
         <form
           onSubmit={handleSubmit}
@@ -104,24 +108,16 @@ function BudgetsPage() {
               onChange={(e) => handleFormChange("amount", e.target.value)}
               required
             />
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-apple-700">
-                Month
-              </label>
-              <select
-                value={form.month}
-                onChange={(e) => handleFormChange("month", e.target.value)}
-                required
-                className="w-full rounded-apple border border-apple-200 bg-white px-4 py-3 text-sm text-apple-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-apple-blue"
-              >
-                <option value="">Select...</option>
-                {MONTH_NAMES.map((name, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Month"
+              value={form.month}
+              onChange={(e) => handleFormChange("month", e.target.value)}
+              required
+              options={MONTH_NAMES.map((name, i) => ({
+                value: String(i + 1),
+                label: name,
+              }))}
+            />
             <Input
               label="Year"
               type="number"
@@ -132,26 +128,18 @@ function BudgetsPage() {
               onChange={(e) => handleFormChange("year", e.target.value)}
               required
             />
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-apple-700">
-                Category
-              </label>
-              <select
-                value={form.categoryId}
-                onChange={(e) => handleFormChange("categoryId", e.target.value)}
-                required
-                className="w-full rounded-apple border border-apple-200 bg-white px-4 py-3 text-sm text-apple-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-apple-blue"
-              >
-                <option value="">Select...</option>
-                {financeStore.categories
-                  .filter((c) => c.type === "EXPENSE")
-                  .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Category"
+              value={form.categoryId}
+              onChange={(e) => handleFormChange("categoryId", e.target.value)}
+              required
+              options={financeStore.categories
+                .filter((c) => c.type === "EXPENSE")
+                .map((c) => ({
+                  value: c.id.toString(),
+                  label: c.name,
+                }))}
+            />
           </div>
           <div className="mt-4 flex justify-end">
             <Button type="submit" isLoading={submitting}>
@@ -197,22 +185,11 @@ function BudgetsPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleDelete(b.id)}
+                    onClick={() => setBudgetToDelete(b.id)}
                     className="ml-4 rounded-full p-2 text-apple-300 transition-colors hover:bg-red-50 hover:text-red-500"
                     aria-label="Delete budget"
                   >
-                    <svg
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
+                    <TrashIcon className="h-4 w-4" />
                   </button>
                 </li>
               ))}
@@ -220,6 +197,14 @@ function BudgetsPage() {
           )}
         </div>
       </main>
+
+      <ConfirmModal
+        isOpen={budgetToDelete !== null}
+        title="Delete Budget"
+        message="Are you sure you want to delete this budget? This action cannot be undone."
+        onConfirm={confirmDelete}
+        onCancel={() => setBudgetToDelete(null)}
+      />
     </div>
   );
 }

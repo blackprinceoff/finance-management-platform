@@ -55,6 +55,8 @@ public class AuthService {
 
         userRepository.save(user);
 
+        auditLoggingService.logAction(user.getId(), "REGISTER");
+
         String token = jwtUtil.generateToken(UserPrincipal.from(user));
         return new AuthResponse(token);
     }
