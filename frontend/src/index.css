@@ -87,3 +87,8 @@
 .react-datepicker__triangle {
   @apply hidden;
 }
+
+.react-datepicker-wrapper {
+  display: block;
+  width: 100%;
+}

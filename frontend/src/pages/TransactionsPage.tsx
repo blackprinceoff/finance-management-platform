@@ -10,6 +10,7 @@ import Select from "../components/Select";
 import ErrorBanner from "../components/ErrorBanner";
 import ConfirmModal from "../components/ConfirmModal";
 import { TrashIcon } from "../components/Icons";
+import DatePicker from "react-datepicker";
 
 type Tab = "expense" | "income";
 
@@ -177,13 +178,18 @@ function TransactionsPage() {
               value={form.description}
               onChange={(e) => handleFormChange("description", e.target.value)}
             />
-            <Input
-              label="Date"
-              type="date"
-              value={form.date}
-              onChange={(e) => handleFormChange("date", e.target.value)}
-              required
-            />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-apple-700">Date</label>
+              <DatePicker
+                selected={form.date ? new Date(form.date) : new Date()}
+                onChange={(date) => setForm((prev) => ({ ...prev, date: date ? date.toISOString().split("T")[0] : "" }))}
+                dateFormat="MMM d, yyyy"
+                showMonthDropdown={true}
+                showYearDropdown={true}
+                dropdownMode="select"
+                className="w-full rounded-apple border px-4 py-3 text-sm text-apple-900 placeholder-apple-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-apple-blue bg-transparent cursor-pointer"
+              />
+            </div>
             <Select
               label="Category"
               value={form.categoryId}

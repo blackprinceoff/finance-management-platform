@@ -9,6 +9,7 @@ import { toast } from "react-hot-toast";
 import ErrorBanner from "../components/ErrorBanner";
 import ConfirmModal from "../components/ConfirmModal";
 import { TrashIcon, EditIcon } from "../components/Icons";
+import DatePicker from "react-datepicker";
 
 interface FormState {
   name: string;
@@ -138,13 +139,18 @@ function GoalsPage() {
               value={form.currentAmount}
               onChange={(e) => handleFormChange("currentAmount", e.target.value)}
             />
-            <Input
-              label="Deadline"
-              type="date"
-              value={form.deadline}
-              onChange={(e) => handleFormChange("deadline", e.target.value)}
-              required
-            />
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-apple-700">Deadline</label>
+              <DatePicker
+                selected={form.deadline ? new Date(form.deadline) : new Date()}
+                onChange={(date) => setForm((prev) => ({ ...prev, deadline: date ? date.toISOString().split("T")[0] : "" }))}
+                dateFormat="MMM d, yyyy"
+                showMonthDropdown={true}
+                showYearDropdown={true}
+                dropdownMode="select"
+                className="w-full rounded-apple border px-4 py-3 text-sm text-apple-900 placeholder-apple-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-apple-blue bg-transparent cursor-pointer"
+              />
+            </div>
           </div>
           <div className="mt-4 flex justify-end gap-3">
             {editingGoalId !== null && (
