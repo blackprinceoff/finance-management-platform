@@ -233,10 +233,12 @@ function TransactionsPage() {
                   <div className="flex flex-1 items-center gap-4">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-apple-900">
-                        {t.description || "No description"}
+                        {t.categoryName}
                       </p>
                       <p className="mt-0.5 text-xs text-apple-400">
-                        {formatDate(t.date)} &middot; {t.categoryName}
+                        {t.description && t.description !== "No description"
+                          ? `${formatDate(t.date)} • ${t.description}`
+                          : formatDate(t.date)}
                       </p>
                     </div>
                     <p
