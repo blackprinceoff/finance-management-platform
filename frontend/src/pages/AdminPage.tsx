@@ -41,7 +41,7 @@ function AdminPage() {
   const [logsTotalPages, setLogsTotalPages] = useState(1);
 
   const [emailSearch, setEmailSearch] = useState("");
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

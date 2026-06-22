@@ -1,22 +1,61 @@
-version: "3.8"
-
 services:
   mysql:
     image: mysql:8.0
     container_name: finance-mysql
     restart: unless-stopped
-    ports:
-      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: finance_db
       MYSQL_USER: finance_user
       MYSQL_PASSWORD: finance_pass
+    ports:
+      - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
+      - mysql-data:/var/lib/mysql
+    networks:
+      - finance-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: finance-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/finance_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: finance_user
+      SPRING_DATASOURCE_PASSWORD: finance_pass
+      JWT_SECRET: dGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIEpXVCB0b2tlbiBnZW5lcmF0aW9uIGFuZCB2YWxpZGF0aW9u
+      CORS_ORIGINS: http://localhost
+      ADMIN_EMAIL: admin@finance.com
+      ADMIN_PASSWORD: Admin123!
+      ADMIN_USERNAME: admin
+    ports:
+      - "8080:8080"
+    networks:
+      - finance-network
+
+  frontend:
+    build: ./frontend
+    container_name: finance-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - finance-network
 
 volumes:
-  mysql_data:
+  mysql-data:
+
+networks:
+  finance-network:
+    driver: bridge

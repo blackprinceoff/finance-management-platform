@@ -205,7 +205,7 @@ function TransactionsPage() {
               <label className="text-sm font-medium text-apple-700">Date</label>
               <DatePicker
                 selected={form.date ? parseLocalDate(form.date) : new Date()}
-                onChange={(date) => setForm((prev) => ({ ...prev, date: date ? formatLocalDate(date) : "" }))}
+                onChange={(date: Date | null) => setForm((prev) => ({ ...prev, date: date ? formatLocalDate(date) : "" }))}
                 dateFormat="MMM d, yyyy"
                 showMonthDropdown={true}
                 showYearDropdown={true}
