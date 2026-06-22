@@ -18,6 +18,16 @@ class AuthStore {
     return this.roles.includes("ROLE_ADMIN");
   }
 
+  get isAuthenticated(): boolean {
+    if (!this.token) return false;
+    try {
+      const decoded = jwtDecode<JwtPayload>(this.token);
+      return decoded.exp ? decoded.exp * 1000 > Date.now() : true;
+    } catch {
+      return false;
+    }
+  }
+
   private setToken(token: string) {
     this.token = token;
     localStorage.setItem("token", token);

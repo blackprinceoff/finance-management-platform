@@ -4,7 +4,7 @@ import financeStore from "../stores/financeStore";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import Input from "../components/Input";
-import { formatCurrency, formatDate } from "../utils/formatUtils";
+import { formatCurrency, formatDate, formatLocalDate, parseLocalDate } from "../utils/formatUtils";
 import { toast } from "react-hot-toast";
 import ErrorBanner from "../components/ErrorBanner";
 import ConfirmModal from "../components/ConfirmModal";
@@ -23,7 +23,7 @@ function emptyForm(): FormState {
     name: "",
     targetAmount: "",
     currentAmount: "0",
-    deadline: new Date().toISOString().split("T")[0],
+    deadline: formatLocalDate(new Date()),
   };
 }
 
@@ -142,8 +142,8 @@ function GoalsPage() {
             <div className="space-y-1">
               <label className="text-sm font-medium text-apple-700">Deadline</label>
               <DatePicker
-                selected={form.deadline ? new Date(form.deadline) : new Date()}
-                onChange={(date) => setForm((prev) => ({ ...prev, deadline: date ? date.toISOString().split("T")[0] : "" }))}
+                selected={form.deadline ? parseLocalDate(form.deadline) : new Date()}
+                onChange={(date) => setForm((prev) => ({ ...prev, deadline: date ? formatLocalDate(date) : "" }))}
                 dateFormat="MMM d, yyyy"
                 showMonthDropdown={true}
                 showYearDropdown={true}

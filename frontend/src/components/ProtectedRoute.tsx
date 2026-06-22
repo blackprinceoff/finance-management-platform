@@ -16,13 +16,13 @@ function ProtectedRoute({
   requireAdmin = false,
   redirectTo = "/auth",
 }: ProtectedRouteProps) {
-  const hasToken = authStore.token !== null;
+  const isAuth = authStore.isAuthenticated;
 
-  if (requireAuth && !hasToken) {
+  if (requireAuth && !isAuth) {
     return <Navigate to={redirectTo} replace />;
   }
 
-  if (!requireAuth && hasToken) {
+  if (!requireAuth && isAuth) {
     return <Navigate to="/dashboard" replace />;
   }
 

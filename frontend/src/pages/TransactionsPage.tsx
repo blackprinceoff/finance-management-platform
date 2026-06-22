@@ -4,7 +4,7 @@ import financeStore from "../stores/financeStore";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import Input from "../components/Input";
-import { formatCurrency, formatDate } from "../utils/formatUtils";
+import { formatCurrency, formatDate, formatLocalDate, parseLocalDate } from "../utils/formatUtils";
 import { toast } from "react-hot-toast";
 import Select from "../components/Select";
 import ErrorBanner from "../components/ErrorBanner";
@@ -25,7 +25,7 @@ function emptyForm(): FormState {
   return {
     amount: "",
     description: "",
-    date: new Date().toISOString().split("T")[0],
+    date: formatLocalDate(new Date()),
     categoryId: "",
   };
 }
@@ -96,7 +96,7 @@ function TransactionsPage() {
 
   const confirmDelete = async () => {
     if (transactionToDelete === null) return;
-    
+
     if (activeTab === "expense") {
       await financeStore.deleteExpense(transactionToDelete);
     } else {
@@ -114,14 +114,14 @@ function TransactionsPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div className="rounded-2xl bg-white p-6 shadow-sm">
             <p className="text-sm font-medium text-apple-500">
-              Total Expenses
+              Total Expenses (Loaded)
             </p>
             <p className="mt-2 text-3xl font-semibold text-red-600">
               {formatCurrency(totalExpenses)}
             </p>
           </div>
           <div className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-apple-500">Total Incomes</p>
+            <p className="text-sm font-medium text-apple-500">Total Incomes (Loaded)</p>
             <p className="mt-2 text-3xl font-semibold text-green-600">
               {formatCurrency(totalIncomes)}
             </p>
@@ -133,21 +133,19 @@ function TransactionsPage() {
         <div className="mt-8 flex w-fit items-center gap-2 rounded-full bg-apple-100 p-1">
           <button
             onClick={() => setActiveTab("expense")}
-            className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
-              activeTab === "expense"
-                ? "bg-white text-apple-900 shadow-sm"
-                : "text-apple-500 hover:text-apple-900"
-            }`}
+            className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${activeTab === "expense"
+              ? "bg-white text-apple-900 shadow-sm"
+              : "text-apple-500 hover:text-apple-900"
+              }`}
           >
             Expenses
           </button>
           <button
             onClick={() => setActiveTab("income")}
-            className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
-              activeTab === "income"
-                ? "bg-white text-apple-900 shadow-sm"
-                : "text-apple-500 hover:text-apple-900"
-            }`}
+            className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${activeTab === "income"
+              ? "bg-white text-apple-900 shadow-sm"
+              : "text-apple-500 hover:text-apple-900"
+              }`}
           >
             Incomes
           </button>
@@ -181,8 +179,8 @@ function TransactionsPage() {
             <div className="space-y-1">
               <label className="text-sm font-medium text-apple-700">Date</label>
               <DatePicker
-                selected={form.date ? new Date(form.date) : new Date()}
-                onChange={(date) => setForm((prev) => ({ ...prev, date: date ? date.toISOString().split("T")[0] : "" }))}
+                selected={form.date ? parseLocalDate(form.date) : new Date()}
+                onChange={(date) => setForm((prev) => ({ ...prev, date: date ? formatLocalDate(date) : "" }))}
                 dateFormat="MMM d, yyyy"
                 showMonthDropdown={true}
                 showYearDropdown={true}
@@ -224,45 +222,71 @@ function TransactionsPage() {
               No {activeTab === "expense" ? "expenses" : "incomes"} yet.
             </div>
           ) : (
-            <ul className="divide-y divide-apple-100">
-              {sortedTransactions.map((t) => (
-                <li
-                  key={t.id}
-                  className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-apple-50"
-                >
-                  <div className="flex flex-1 items-center gap-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-apple-900">
-                        {t.categoryName}
-                      </p>
-                      <p className="mt-0.5 text-xs text-apple-400">
-                        {t.description && t.description !== "No description"
-                          ? `${formatDate(t.date)} • ${t.description}`
-                          : formatDate(t.date)}
-                      </p>
-                    </div>
-                    <p
-                      className={`shrink-0 text-sm font-semibold ${
-                        activeTab === "expense"
+            <>
+              <ul className="divide-y divide-apple-100">
+                {sortedTransactions.map((t) => (
+                  <li
+                    key={t.id}
+                    className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-apple-50"
+                  >
+                    <div className="flex flex-1 items-center gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-apple-900">
+                          {t.categoryName}
+                        </p>
+                        <p className="mt-0.5 text-xs text-apple-400">
+                          {t.description && t.description !== "No description"
+                            ? `${formatDate(t.date)} • ${t.description}`
+                            : formatDate(t.date)}
+                        </p>
+                      </div>
+                      <p
+                        className={`shrink-0 text-sm font-semibold ${activeTab === "expense"
                           ? "text-red-600"
                           : "text-green-600"
-                      }`}
+                          }`}
+                      >
+                        {activeTab === "expense" ? "-" : "+"}
+                        {formatCurrency(t.amount)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTransactionToDelete(t.id)}
+                      className="ml-4 rounded-full p-2 text-apple-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                      aria-label="Delete"
                     >
-                      {activeTab === "expense" ? "-" : "+"}
-                      {formatCurrency(t.amount)}
-                    </p>
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {activeTab === "expense" ? (
+                !financeStore.expenseIsLastPage && (
+                  <div className="flex justify-center border-t border-apple-100 py-4">
+                    <Button
+                      variant="secondary"
+                      isLoading={financeStore.expensesLoading}
+                      onClick={() => financeStore.loadMoreExpenses()}
+                    >
+                      Load More
+                    </Button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setTransactionToDelete(t.id)}
-                    className="ml-4 rounded-full p-2 text-apple-300 transition-colors hover:bg-red-50 hover:text-red-500"
-                    aria-label="Delete"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </li>
-              ))}
-            </ul>
+                )
+              ) : (
+                !financeStore.incomeIsLastPage && (
+                  <div className="flex justify-center border-t border-apple-100 py-4">
+                    <Button
+                      variant="secondary"
+                      isLoading={financeStore.incomesLoading}
+                      onClick={() => financeStore.loadMoreIncomes()}
+                    >
+                      Load More
+                    </Button>
+                  </div>
+                )
+              )}
+            </>
           )}
         </div>
       </main>

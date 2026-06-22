@@ -1,8 +1,13 @@
 import api from "./api";
-import type { Expense, ExpenseRequest } from "../types/finance";
+import type { Expense, ExpenseRequest, Page } from "../types/finance";
 
-export function getAll(categoryId?: number): Promise<Expense[]> {
-  const params = categoryId !== undefined ? { categoryId } : undefined;
+export function getAll(
+  page = 0,
+  size = 20,
+  categoryId?: number,
+): Promise<Page<Expense>> {
+  const params: Record<string, string | number> = { page, size };
+  if (categoryId !== undefined) params.categoryId = categoryId;
   return api.get("/expenses", { params }).then((res) => res.data);
 }
 

@@ -18,7 +18,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.finance.platform.security.UserPrincipal;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,10 +29,9 @@ public class AdminService {
     private final AuditLogRepository auditLogRepository;
     private final AuditLoggingService auditLoggingService;
 
-    public List<UserDTO> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(this::toUserDTO)
-                .toList();
+    public Page<UserDTO> getAllUsers(int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
+        return userRepository.findAll(pageable).map(this::toUserDTO);
     }
 
     @Transactional

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
 import Button from "../components/Button";
+import { formatLocalDate, parseLocalDate } from "../utils/formatUtils";
 import * as adminService from "../services/adminService";
 import type { AdminUser, AuditLog } from "../types/admin";
 import { toast } from "react-hot-toast";
@@ -32,14 +33,29 @@ function getPageNumbers(currentPage: number, totalPages: number): (number | stri
 
 function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [usersPage, setUsersPage] = useState(0);
+  const [usersTotalPages, setUsersTotalPages] = useState(1);
+
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [logsPage, setLogsPage] = useState(0);
+  const [logsTotalPages, setLogsTotalPages] = useState(1);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<number | null>(null);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  const fetchUsers = async (pageNum: number) => {
+    try {
+      const usersData = await adminService.getUsers(pageNum, 10);
+      setUsers(usersData.content);
+      setUsersTotalPages(usersData.totalPages);
+      setUsersPage(usersData.number);
+    } catch {
+      setError("Failed to load users.");
+    }
+  };
 
   const fetchAuditLogs = async (pageNum: number, start?: string, end?: string) => {
     try {
@@ -47,8 +63,8 @@ function AdminPage() {
       const endParam = end ? end + "T23:59:59.999" : undefined;
       const logsData = await adminService.getAuditLogs(pageNum, 10, startParam, endParam);
       setAuditLogs(logsData.content);
-      setTotalPages(logsData.totalPages);
-      setCurrentPage(logsData.number);
+      setLogsTotalPages(logsData.totalPages);
+      setLogsPage(logsData.number);
     } catch {
       // silent — non-critical refresh
     }
@@ -59,13 +75,16 @@ function AdminPage() {
     setError(null);
     try {
       const [usersData, logsData] = await Promise.all([
-        adminService.getUsers(),
+        adminService.getUsers(0, 10),
         adminService.getAuditLogs(0, 10),
       ]);
-      setUsers(usersData);
+      setUsers(usersData.content);
+      setUsersTotalPages(usersData.totalPages);
+      setUsersPage(usersData.number);
+
       setAuditLogs(logsData.content);
-      setTotalPages(logsData.totalPages);
-      setCurrentPage(logsData.number);
+      setLogsTotalPages(logsData.totalPages);
+      setLogsPage(logsData.number);
     } catch {
       setError("Failed to load admin data.");
     } finally {
@@ -211,6 +230,51 @@ function AdminPage() {
                   ))}
                 </tbody>
               </table>
+              <div className="flex items-center justify-center gap-1 border-t border-apple-100 px-6 py-4">
+                <button
+                  disabled={usersPage === 0}
+                  onClick={() => fetchUsers(usersPage - 1)}
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Previous Page"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+
+                {getPageNumbers(usersPage, usersTotalPages).map((page, idx) =>
+                  page === "..." ? (
+                    <span
+                      key={`ellipsis-users-${idx}`}
+                      className="flex h-8 w-8 items-center justify-center text-sm text-gray-400"
+                    >
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => fetchUsers(Number(page) - 1)}
+                      className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors ${page === usersPage + 1
+                          ? "bg-gray-900 font-medium text-white"
+                          : "text-gray-600 hover:bg-gray-100"
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                )}
+
+                <button
+                  disabled={usersPage >= usersTotalPages - 1}
+                  onClick={() => fetchUsers(usersPage + 1)}
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Next Page"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
         </section>
@@ -223,12 +287,12 @@ function AdminPage() {
             <div className="flex items-center gap-3">
               <DatePicker
                 selectsRange={true}
-                startDate={startDate ? new Date(startDate + "T00:00:00") : null}
-                endDate={endDate ? new Date(endDate + "T00:00:00") : null}
+                startDate={startDate ? parseLocalDate(startDate) : null}
+                endDate={endDate ? parseLocalDate(endDate) : null}
                 onChange={(dates: [Date | null, Date | null]) => {
                   const [start, end] = dates;
-                  setStartDate(start ? start.toISOString().split("T")[0] : "");
-                  setEndDate(end ? end.toISOString().split("T")[0] : "");
+                  setStartDate(start ? formatLocalDate(start) : "");
+                  setEndDate(end ? formatLocalDate(end) : "");
                 }}
                 isClearable={true}
                 placeholderText="Start Date – End Date"
@@ -285,19 +349,20 @@ function AdminPage() {
               </table>
               <div className="flex items-center justify-center gap-1 border-t border-apple-100 px-6 py-4">
                 <button
-                  disabled={currentPage === 0}
-                  onClick={() => fetchAuditLogs(currentPage - 1, startDate || undefined, endDate || undefined)}
+                  disabled={logsPage === 0}
+                  onClick={() => fetchAuditLogs(logsPage - 1, startDate || undefined, endDate || undefined)}
                   className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Previous Page"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
 
-                {getPageNumbers(currentPage, totalPages).map((page, idx) =>
+                {getPageNumbers(logsPage, logsTotalPages).map((page, idx) =>
                   page === "..." ? (
                     <span
-                      key={`ellipsis-${idx}`}
+                      key={`ellipsis-logs-${idx}`}
                       className="flex h-8 w-8 items-center justify-center text-sm text-gray-400"
                     >
                       ...
@@ -306,7 +371,7 @@ function AdminPage() {
                     <button
                       key={page}
                       onClick={() => fetchAuditLogs(Number(page) - 1, startDate || undefined, endDate || undefined)}
-                      className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors ${page === currentPage + 1
+                      className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors ${page === logsPage + 1
                           ? "bg-gray-900 font-medium text-white"
                           : "text-gray-600 hover:bg-gray-100"
                         }`}
@@ -317,9 +382,10 @@ function AdminPage() {
                 )}
 
                 <button
-                  disabled={currentPage >= totalPages - 1}
-                  onClick={() => fetchAuditLogs(currentPage + 1, startDate || undefined, endDate || undefined)}
+                  disabled={logsPage >= logsTotalPages - 1}
+                  onClick={() => fetchAuditLogs(logsPage + 1, startDate || undefined, endDate || undefined)}
                   className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Next Page"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

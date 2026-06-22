@@ -6,7 +6,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "notifications", indexes = {
+        @Index(name = "idx_notification_user_created", columnList = "user_id, createdAt"),
+        @Index(name = "idx_notification_user_message_created", columnList = "user_id, message, createdAt")
+})
 @Getter
 @Setter
 @Builder

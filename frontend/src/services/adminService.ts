@@ -1,8 +1,18 @@
 import api from "./api";
 import type { AdminUser, AuditLog } from "../types/admin";
 
-export function getUsers(): Promise<AdminUser[]> {
-  return api.get("/admin/users").then((res) => res.data);
+export interface AdminUserPage {
+  content: AdminUser[];
+  totalPages: number;
+  number: number;
+}
+
+export function getUsers(page = 0, size = 10): Promise<AdminUserPage> {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  });
+  return api.get(`/admin/users?${params.toString()}`).then((res) => res.data);
 }
 
 export function blockUser(id: number): Promise<void> {

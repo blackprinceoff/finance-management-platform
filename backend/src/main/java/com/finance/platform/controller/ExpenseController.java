@@ -6,12 +6,13 @@ import com.finance.platform.security.UserPrincipal;
 import com.finance.platform.service.ExpenseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/expenses")
@@ -21,10 +22,13 @@ public class ExpenseController {
     private final ExpenseService expenseService;
 
     @GetMapping
-    public ResponseEntity<List<ExpenseResponse>> getAllExpenses(
+    public ResponseEntity<Page<ExpenseResponse>> getAllExpenses(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) Long categoryId,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(expenseService.getAllExpenses(principal.getId(), categoryId));
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date"));
+        return ResponseEntity.ok(expenseService.getAllExpenses(principal.getId(), categoryId, pageable));
     }
 
     @GetMapping("/{id}")
@@ -58,3 +62,4 @@ public class ExpenseController {
         return ResponseEntity.noContent().build();
     }
 }
+

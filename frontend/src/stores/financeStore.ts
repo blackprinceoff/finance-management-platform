@@ -30,6 +30,16 @@ class FinanceStore {
   dashboardSummary: DashboardSummary | null = null;
   budgetProgressList: BudgetProgress[] = [];
 
+  // Pagination state for expenses
+  expensePage = 0;
+  expenseTotalPages = 0;
+  expenseIsLastPage = true;
+
+  // Pagination state for incomes
+  incomePage = 0;
+  incomeTotalPages = 0;
+  incomeIsLastPage = true;
+
   categoriesLoading = false;
   expensesLoading = false;
   incomesLoading = false;
@@ -101,10 +111,22 @@ class FinanceStore {
 
   // ── Expenses ────────────────────────────────────────────
 
-  fetchExpenses(categoryId?: number) {
-    return this.run("expensesLoading", () => expenseService.getAll(categoryId), (data) => {
-      this.expenses = data;
+  fetchExpenses(page = 0, categoryId?: number) {
+    return this.run("expensesLoading", () => expenseService.getAll(page, 20, categoryId), (pageData) => {
+      if (page === 0) {
+        this.expenses = pageData.content;
+      } else {
+        this.expenses = [...this.expenses, ...pageData.content];
+      }
+      this.expensePage = pageData.number;
+      this.expenseTotalPages = pageData.totalPages;
+      this.expenseIsLastPage = pageData.last;
     });
+  }
+
+  loadMoreExpenses(categoryId?: number) {
+    if (this.expenseIsLastPage) return Promise.resolve(false);
+    return this.fetchExpenses(this.expensePage + 1, categoryId);
   }
 
   createExpense(data: ExpenseRequest) {
@@ -128,10 +150,22 @@ class FinanceStore {
 
   // ── Incomes ─────────────────────────────────────────────
 
-  fetchIncomes(categoryId?: number) {
-    return this.run("incomesLoading", () => incomeService.getAll(categoryId), (data) => {
-      this.incomes = data;
+  fetchIncomes(page = 0, categoryId?: number) {
+    return this.run("incomesLoading", () => incomeService.getAll(page, 20, categoryId), (pageData) => {
+      if (page === 0) {
+        this.incomes = pageData.content;
+      } else {
+        this.incomes = [...this.incomes, ...pageData.content];
+      }
+      this.incomePage = pageData.number;
+      this.incomeTotalPages = pageData.totalPages;
+      this.incomeIsLastPage = pageData.last;
     });
+  }
+
+  loadMoreIncomes(categoryId?: number) {
+    if (this.incomeIsLastPage) return Promise.resolve(false);
+    return this.fetchIncomes(this.incomePage + 1, categoryId);
   }
 
   createIncome(data: IncomeRequest) {

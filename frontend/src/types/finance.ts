@@ -101,3 +101,14 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
 }
+
+/** Mirrors Spring Boot's Page<T> response shape. */
+export interface Page<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  number: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+}

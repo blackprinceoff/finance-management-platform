@@ -18,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -39,6 +42,19 @@ public class ExpenseService {
         return expenses.stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    public Page<ExpenseResponse> getAllExpenses(
+            Long userId, Long categoryId, Pageable pageable) {
+        Page<Expense> page;
+
+        if (categoryId != null) {
+            page = expenseRepository.findByUserIdAndCategoryId(userId, categoryId, pageable);
+        } else {
+            page = expenseRepository.findByUserId(userId, pageable);
+        }
+
+        return page.map(this::toResponse);
     }
 
     public ExpenseResponse getExpenseById(Long id, Long userId) {

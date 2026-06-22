@@ -109,6 +109,13 @@ public class CategoryService {
             }
         }
 
+        if (expenseRepository.existsByCategoryId(id) ||
+            incomeRepository.existsByCategoryId(id) ||
+            budgetRepository.existsByCategoryId(id)) {
+            throw new BadRequestException(
+                    "Cannot delete category because it is linked to existing transactions or budgets");
+        }
+
         categoryRepository.delete(category);
     }
 
