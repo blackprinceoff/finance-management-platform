@@ -30,9 +30,21 @@ api.interceptors.response.use(
       }
 
       if (status === 400 && typeof data === "object" && data !== null) {
-        Object.values(data as Record<string, string>).forEach((msg) => {
-          if (typeof msg === "string") toast.error(msg);
-        });
+        const errorData = data as Record<string, unknown>;
+        if ("error" in errorData && "path" in errorData) {
+          toast.error((errorData.error as string) || "An error occurred");
+        } else if ("message" in errorData) {
+          toast.error((errorData.message as string) || "An error occurred");
+        } else {
+          Object.entries(errorData).forEach(([key, msg]) => {
+            if (
+              typeof msg === "string" &&
+              !["timestamp", "path", "status", "error"].includes(key)
+            ) {
+              toast.error(msg);
+            }
+          });
+        }
         return Promise.reject(error);
       }
 

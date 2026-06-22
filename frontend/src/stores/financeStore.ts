@@ -52,8 +52,10 @@ class FinanceStore {
     fn: () => Promise<T>,
     onSuccess: (data: T) => void,
   ): Promise<boolean> {
-    this[loadingKey] = true;
-    this.error = null;
+    runInAction(() => {
+      this[loadingKey] = true;
+      this.error = null;
+    });
     try {
       const data = await fn();
       runInAction(() => onSuccess(data));
