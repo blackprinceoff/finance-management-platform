@@ -4,6 +4,7 @@ import com.finance.platform.dto.notification.NotificationResponse;
 import com.finance.platform.security.UserPrincipal;
 import com.finance.platform.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -29,5 +30,12 @@ public class NotificationController {
             @AuthenticationPrincipal UserPrincipal principal) {
         notificationService.markAsRead(id, principal.getId());
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping
+    public ResponseEntity<Void> clearAllNotifications(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        notificationService.clearAllNotifications(principal.getId());
+        return ResponseEntity.noContent().build();
     }
 }

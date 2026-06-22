@@ -1,14 +1,14 @@
 import api from "./api";
-import type { Income, IncomeRequest, Page } from "../types/finance";
+import type { Income, IncomeRequest, TransactionPage } from "../types/finance";
 
 export function getAll(
   page = 0,
-  size = 20,
+  size = 10,
   categoryId?: number,
-): Promise<Page<Income>> {
-  const params: Record<string, string | number> = { page, size };
-  if (categoryId !== undefined) params.categoryId = categoryId;
-  return api.get("/incomes", { params }).then((res) => res.data);
+): Promise<TransactionPage<Income>> {
+  let url = `/incomes?page=${page}&size=${size}`;
+  if (categoryId !== undefined) url += `&categoryId=${categoryId}`;
+  return api.get(url).then((res) => res.data);
 }
 
 export function getById(id: number): Promise<Income> {

@@ -17,4 +17,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     @Query("SELECT COUNT(n) > 0 FROM Notification n WHERE n.user.id = :userId AND n.message = :message AND n.createdAt >= :since")
     boolean existsDuplicateSince(@Param("userId") Long userId, @Param("message") String message, @Param("since") LocalDateTime since);
+
+    void deleteByUserId(Long userId);
 }

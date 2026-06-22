@@ -2,11 +2,11 @@ package com.finance.platform.controller;
 
 import com.finance.platform.dto.IncomeRequest;
 import com.finance.platform.dto.IncomeResponse;
+import com.finance.platform.dto.TransactionPageResponse;
 import com.finance.platform.security.UserPrincipal;
 import com.finance.platform.service.IncomeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -22,9 +22,9 @@ public class IncomeController {
     private final IncomeService incomeService;
 
     @GetMapping
-    public ResponseEntity<Page<IncomeResponse>> getAllIncomes(
+    public ResponseEntity<TransactionPageResponse<IncomeResponse>> getAllIncomes(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long categoryId,
             @AuthenticationPrincipal UserPrincipal principal) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "date"));

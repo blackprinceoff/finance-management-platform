@@ -137,10 +137,21 @@ function Header({ currentPage }: HeaderProps) {
 
           {dropdownOpen && (
             <div className="absolute right-0 z-50 mt-2 w-80 animate-in fade-in slide-in-from-top-2 rounded-2xl border border-apple-100 bg-white shadow-xl">
-              <div className="border-b border-apple-100 px-5 py-3">
+              <div className="flex items-center justify-between border-b border-apple-100 px-5 py-3">
                 <p className="text-sm font-semibold text-apple-900">
                   Notifications
                 </p>
+                {notificationStore.notifications.length > 0 && (
+                  <button
+                    onClick={async () => {
+                      await notificationStore.clearAll();
+                      setDropdownOpen(false);
+                    }}
+                    className="text-xs font-medium text-apple-500 transition-colors hover:text-apple-700"
+                  >
+                    Clear All
+                  </button>
+                )}
               </div>
               <div className="max-h-72 overflow-y-auto">
                 {notificationStore.notifications.length === 0 ? (

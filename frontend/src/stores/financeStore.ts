@@ -40,6 +40,9 @@ class FinanceStore {
   incomeTotalPages = 0;
   incomeIsLastPage = true;
 
+  expenseTotalSum = 0;
+  incomeTotalSum = 0;
+
   categoriesLoading = false;
   expensesLoading = false;
   incomesLoading = false;
@@ -91,8 +94,8 @@ class FinanceStore {
   }
 
   createCategory(data: CategoryRequest) {
-    return this.run("categoriesLoading", () => categoryService.create(data), (created) => {
-      this.categories.unshift(created);
+    return this.run("categoriesLoading", () => categoryService.create(data), () => {
+      this.fetchCategories();
     });
   }
 
@@ -112,21 +115,18 @@ class FinanceStore {
   // ── Expenses ────────────────────────────────────────────
 
   fetchExpenses(page = 0, categoryId?: number) {
-    return this.run("expensesLoading", () => expenseService.getAll(page, 20, categoryId), (pageData) => {
-      if (page === 0) {
-        this.expenses = pageData.content;
-      } else {
-        this.expenses = [...this.expenses, ...pageData.content];
+    return this.run("expensesLoading", () => expenseService.getAll(page, 10, categoryId), (pageData) => {
+      if (pageData.content.length === 0 && page > 0) {
+        this.expensePage = page - 1;
+        this.fetchExpenses(this.expensePage, categoryId);
+        return;
       }
+      this.expenses = pageData.content;
       this.expensePage = pageData.number;
       this.expenseTotalPages = pageData.totalPages;
       this.expenseIsLastPage = pageData.last;
+      this.expenseTotalSum = pageData.totalSum;
     });
-  }
-
-  loadMoreExpenses(categoryId?: number) {
-    if (this.expenseIsLastPage) return Promise.resolve(false);
-    return this.fetchExpenses(this.expensePage + 1, categoryId);
   }
 
   createExpense(data: ExpenseRequest) {
@@ -144,28 +144,25 @@ class FinanceStore {
 
   deleteExpense(id: number) {
     return this.run("expensesLoading", () => expenseService.remove(id), () => {
-      this.expenses = this.expenses.filter((e) => e.id !== id);
+      this.fetchExpenses(this.expensePage);
     });
   }
 
   // ── Incomes ─────────────────────────────────────────────
 
   fetchIncomes(page = 0, categoryId?: number) {
-    return this.run("incomesLoading", () => incomeService.getAll(page, 20, categoryId), (pageData) => {
-      if (page === 0) {
-        this.incomes = pageData.content;
-      } else {
-        this.incomes = [...this.incomes, ...pageData.content];
+    return this.run("incomesLoading", () => incomeService.getAll(page, 10, categoryId), (pageData) => {
+      if (pageData.content.length === 0 && page > 0) {
+        this.incomePage = page - 1;
+        this.fetchIncomes(this.incomePage, categoryId);
+        return;
       }
+      this.incomes = pageData.content;
       this.incomePage = pageData.number;
       this.incomeTotalPages = pageData.totalPages;
       this.incomeIsLastPage = pageData.last;
+      this.incomeTotalSum = pageData.totalSum;
     });
-  }
-
-  loadMoreIncomes(categoryId?: number) {
-    if (this.incomeIsLastPage) return Promise.resolve(false);
-    return this.fetchIncomes(this.incomePage + 1, categoryId);
   }
 
   createIncome(data: IncomeRequest) {
@@ -183,7 +180,7 @@ class FinanceStore {
 
   deleteIncome(id: number) {
     return this.run("incomesLoading", () => incomeService.remove(id), () => {
-      this.incomes = this.incomes.filter((i) => i.id !== id);
+      this.fetchIncomes(this.incomePage);
     });
   }
 

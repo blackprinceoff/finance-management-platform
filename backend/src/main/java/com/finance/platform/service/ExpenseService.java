@@ -2,6 +2,7 @@ package com.finance.platform.service;
 
 import com.finance.platform.dto.ExpenseRequest;
 import com.finance.platform.dto.ExpenseResponse;
+import com.finance.platform.dto.TransactionPageResponse;
 import com.finance.platform.entity.Category;
 import com.finance.platform.entity.Expense;
 import com.finance.platform.entity.User;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -44,7 +46,7 @@ public class ExpenseService {
                 .toList();
     }
 
-    public Page<ExpenseResponse> getAllExpenses(
+    public TransactionPageResponse<ExpenseResponse> getAllExpenses(
             Long userId, Long categoryId, Pageable pageable) {
         Page<Expense> page;
 
@@ -54,7 +56,12 @@ public class ExpenseService {
             page = expenseRepository.findByUserId(userId, pageable);
         }
 
-        return page.map(this::toResponse);
+        BigDecimal totalSum = expenseRepository.sumAllByUserId(userId);
+        List<ExpenseResponse> content = page.map(this::toResponse).getContent();
+
+        return new TransactionPageResponse<>(
+                content, page.getTotalPages(), page.getTotalElements(),
+                page.getNumber(), page.getSize(), page.isFirst(), page.isLast(), totalSum);
     }
 
     public ExpenseResponse getExpenseById(Long id, Long userId) {

@@ -12,6 +12,29 @@ import ConfirmModal from "../components/ConfirmModal";
 import { TrashIcon } from "../components/Icons";
 import DatePicker from "react-datepicker";
 
+function getPageNumbers(currentPage: number, totalPages: number): (number | string)[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  const pages: (number | string)[] = [1];
+  const current = currentPage + 1;
+  const last = totalPages;
+
+  const rangeStart = Math.max(2, current - 1);
+  const rangeEnd = Math.min(last - 1, current + 1);
+
+  if (rangeStart > 2) pages.push("...");
+
+  for (let i = rangeStart; i <= rangeEnd; i++) pages.push(i);
+
+  if (rangeEnd < last - 1) pages.push("...");
+
+  if (last > 1) pages.push(last);
+
+  return pages;
+}
+
 type Tab = "expense" | "income";
 
 interface FormState {
@@ -35,25 +58,17 @@ function TransactionsPage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<number | null>(null);
+  const [expensePage, setExpensePage] = useState(0);
+  const [incomePage, setIncomePage] = useState(0);
 
   useEffect(() => {
     financeStore.fetchCategories();
-    financeStore.fetchExpenses();
-    financeStore.fetchIncomes();
+    financeStore.fetchExpenses(0);
+    financeStore.fetchIncomes(0);
   }, []);
 
   const filteredCategories = financeStore.categories.filter(
     (c) => c.type === (activeTab === "expense" ? "EXPENSE" : "INCOME"),
-  );
-
-  const totalExpenses = financeStore.expenses.reduce(
-    (sum, e) => sum + e.amount,
-    0,
-  );
-
-  const totalIncomes = financeStore.incomes.reduce(
-    (sum, i) => sum + i.amount,
-    0,
   );
 
   const transactions =
@@ -62,6 +77,16 @@ function TransactionsPage() {
   const sortedTransactions = [...transactions].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
+
+  const handleExpensePageChange = (page: number) => {
+    setExpensePage(page);
+    financeStore.fetchExpenses(page);
+  };
+
+  const handleIncomePageChange = (page: number) => {
+    setIncomePage(page);
+    financeStore.fetchIncomes(page);
+  };
 
   const handleFormChange = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -114,16 +139,16 @@ function TransactionsPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div className="rounded-2xl bg-white p-6 shadow-sm">
             <p className="text-sm font-medium text-apple-500">
-              Total Expenses (Loaded)
+              Total Expenses
             </p>
             <p className="mt-2 text-3xl font-semibold text-red-600">
-              {formatCurrency(totalExpenses)}
+              {formatCurrency(financeStore.expenseTotalSum)}
             </p>
           </div>
           <div className="rounded-2xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-apple-500">Total Incomes (Loaded)</p>
+            <p className="text-sm font-medium text-apple-500">Total Incomes</p>
             <p className="mt-2 text-3xl font-semibold text-green-600">
-              {formatCurrency(totalIncomes)}
+              {formatCurrency(financeStore.incomeTotalSum)}
             </p>
           </div>
         </div>
@@ -261,31 +286,85 @@ function TransactionsPage() {
                   </li>
                 ))}
               </ul>
-              {activeTab === "expense" ? (
-                !financeStore.expenseIsLastPage && (
-                  <div className="flex justify-center border-t border-apple-100 py-4">
-                    <Button
-                      variant="secondary"
-                      isLoading={financeStore.expensesLoading}
-                      onClick={() => financeStore.loadMoreExpenses()}
+              {activeTab === "expense"
+                ? financeStore.expenseTotalPages > 1 && (
+                  <div className="flex items-center justify-center gap-1 border-t border-apple-100 px-6 py-4">
+                    <button
+                      disabled={expensePage === 0}
+                      onClick={() => handleExpensePageChange(expensePage - 1)}
+                      className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Previous Page"
                     >
-                      Load More
-                    </Button>
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+
+                    {getPageNumbers(expensePage, financeStore.expenseTotalPages).map((page, idx) =>
+                      page === "..." ? (
+                        <span key={`ellipsis-expense-${idx}`} className="flex h-8 w-8 items-center justify-center text-sm text-gray-400">...</span>
+                      ) : (
+                        <button
+                          key={page}
+                          onClick={() => handleExpensePageChange(Number(page) - 1)}
+                          className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors ${page === expensePage + 1 ? "bg-gray-900 font-medium text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                        >
+                          {page}
+                        </button>
+                      ),
+                    )}
+
+                    <button
+                      disabled={expensePage >= financeStore.expenseTotalPages - 1}
+                      onClick={() => handleExpensePageChange(expensePage + 1)}
+                      className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Next Page"
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   </div>
                 )
-              ) : (
-                !financeStore.incomeIsLastPage && (
-                  <div className="flex justify-center border-t border-apple-100 py-4">
-                    <Button
-                      variant="secondary"
-                      isLoading={financeStore.incomesLoading}
-                      onClick={() => financeStore.loadMoreIncomes()}
+                : financeStore.incomeTotalPages > 1 && (
+                  <div className="flex items-center justify-center gap-1 border-t border-apple-100 px-6 py-4">
+                    <button
+                      disabled={incomePage === 0}
+                      onClick={() => handleIncomePageChange(incomePage - 1)}
+                      className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Previous Page"
                     >
-                      Load More
-                    </Button>
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+
+                    {getPageNumbers(incomePage, financeStore.incomeTotalPages).map((page, idx) =>
+                      page === "..." ? (
+                        <span key={`ellipsis-income-${idx}`} className="flex h-8 w-8 items-center justify-center text-sm text-gray-400">...</span>
+                      ) : (
+                        <button
+                          key={page}
+                          onClick={() => handleIncomePageChange(Number(page) - 1)}
+                          className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors ${page === incomePage + 1 ? "bg-gray-900 font-medium text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                        >
+                          {page}
+                        </button>
+                      ),
+                    )}
+
+                    <button
+                      disabled={incomePage >= financeStore.incomeTotalPages - 1}
+                      onClick={() => handleIncomePageChange(incomePage + 1)}
+                      className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Next Page"
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   </div>
-                )
-              )}
+                )}
             </>
           )}
         </div>

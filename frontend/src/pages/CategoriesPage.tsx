@@ -7,7 +7,6 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import type { CategoryType } from "../types/finance";
 import { toast } from "react-hot-toast";
-import ErrorBanner from "../components/ErrorBanner";
 import ConfirmModal from "../components/ConfirmModal";
 import { TrashIcon } from "../components/Icons";
 
@@ -34,6 +33,14 @@ function CategoriesPage() {
     financeStore.fetchCategories();
   }, []);
 
+  const expenseCategories = financeStore.categories.filter(
+    (c) => c.type === "EXPENSE",
+  );
+
+  const incomeCategories = financeStore.categories.filter(
+    (c) => c.type === "INCOME",
+  );
+
   const handleFormChange = (
     field: keyof FormState,
     value: string | boolean,
@@ -56,6 +63,8 @@ function CategoriesPage() {
       if (success) {
         setForm(emptyForm());
         toast.success("Category created successfully");
+      } else {
+        toast.error(financeStore.error || "Failed to create category");
       }
     } finally {
       setSubmitting(false);
@@ -64,9 +73,11 @@ function CategoriesPage() {
 
   const confirmDelete = async () => {
     if (categoryToDelete === null) return;
-    await financeStore.deleteCategory(categoryToDelete);
+    const success = await financeStore.deleteCategory(categoryToDelete);
+    if (success) {
+      toast.success("Category deleted");
+    }
     setCategoryToDelete(null);
-    toast.success("Category deleted");
   };
 
   const typeBadge = (type: CategoryType) => {
@@ -89,8 +100,6 @@ function CategoriesPage() {
       <Header currentPage="categories" />
 
       <main className="mx-auto max-w-5xl px-4 py-8">
-        <ErrorBanner message={financeStore.error} />
-
         <form
           onSubmit={handleSubmit}
           className="mt-6 rounded-2xl bg-white p-6 shadow-sm"
@@ -147,53 +156,104 @@ function CategoriesPage() {
           </div>
         </form>
 
-        <div className="mt-6 rounded-2xl bg-white shadow-sm">
-          <div className="border-b border-apple-100 px-6 py-4">
-            <h2 className="text-base font-semibold text-apple-900">
-              Categories
-            </h2>
-          </div>
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <section className="rounded-2xl bg-white shadow-sm">
+            <div className="flex items-center gap-2 border-b border-apple-100 px-6 py-4">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+              <h2 className="text-base font-semibold text-apple-900">
+                Expense Categories
+              </h2>
+            </div>
 
-          {financeStore.categoriesLoading && financeStore.categories.length === 0 ? (
-            <div className="px-6 py-12 text-center text-sm text-apple-400">
-              Loading...
-            </div>
-          ) : financeStore.categories.length === 0 ? (
-            <div className="px-6 py-12 text-center text-sm text-apple-400">
-              No categories yet.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
-              {financeStore.categories.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between rounded-xl border border-apple-100 p-4 transition-colors hover:bg-apple-50"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-apple-900">
-                      {c.name}
-                    </p>
-                    <div className="mt-2 flex items-center gap-2">
-                      {typeBadge(c.type)}
+            {financeStore.categoriesLoading && expenseCategories.length === 0 ? (
+              <div className="px-6 py-12 text-center text-sm text-apple-400">
+                Loading...
+              </div>
+            ) : expenseCategories.length === 0 ? (
+              <div className="px-6 py-12 text-center text-sm text-apple-400">
+                No expense categories yet.
+              </div>
+            ) : (
+              <div className="divide-y divide-apple-100">
+                {expenseCategories.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-apple-50 even:bg-apple-50/50"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-apple-900">
+                        {c.name}
+                      </p>
                       {c.isGlobal && (
-                        <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                        <span className="mt-1 inline-block rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
                           Global
                         </span>
                       )}
                     </div>
+                    {!c.isGlobal && (
+                      <button
+                        type="button"
+                        onClick={() => setCategoryToDelete(c.id)}
+                        className="ml-4 rounded-full p-2 text-apple-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                        aria-label="Delete category"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setCategoryToDelete(c.id)}
-                    className="ml-4 rounded-full p-2 text-apple-300 transition-colors hover:bg-red-50 hover:text-red-500"
-                    aria-label="Delete category"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-2xl bg-white shadow-sm">
+            <div className="flex items-center gap-2 border-b border-apple-100 px-6 py-4">
+              <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+              <h2 className="text-base font-semibold text-apple-900">
+                Income Categories
+              </h2>
             </div>
-          )}
+
+            {financeStore.categoriesLoading && incomeCategories.length === 0 ? (
+              <div className="px-6 py-12 text-center text-sm text-apple-400">
+                Loading...
+              </div>
+            ) : incomeCategories.length === 0 ? (
+              <div className="px-6 py-12 text-center text-sm text-apple-400">
+                No income categories yet.
+              </div>
+            ) : (
+              <div className="divide-y divide-apple-100">
+                {incomeCategories.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-apple-50 even:bg-apple-50/50"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-apple-900">
+                        {c.name}
+                      </p>
+                      {c.isGlobal && (
+                        <span className="mt-1 inline-block rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                          Global
+                        </span>
+                      )}
+                    </div>
+                    {!c.isGlobal && (
+                      <button
+                        type="button"
+                        onClick={() => setCategoryToDelete(c.id)}
+                        className="ml-4 rounded-full p-2 text-apple-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                        aria-label="Delete category"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </main>
 

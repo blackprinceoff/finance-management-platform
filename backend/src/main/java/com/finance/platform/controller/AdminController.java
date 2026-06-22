@@ -28,8 +28,9 @@ public class AdminController {
     @GetMapping("/users")
     public ResponseEntity<Page<UserDTO>> getAllUsers(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(adminService.getAllUsers(page, size));
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String email) {
+        return ResponseEntity.ok(adminService.getAllUsers(page, size, email));
     }
 
     @PutMapping("/users/{id}/block")

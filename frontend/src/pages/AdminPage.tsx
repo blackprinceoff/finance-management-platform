@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import { formatLocalDate, parseLocalDate } from "../utils/formatUtils";
@@ -40,15 +40,18 @@ function AdminPage() {
   const [logsPage, setLogsPage] = useState(0);
   const [logsTotalPages, setLogsTotalPages] = useState(1);
 
+  const [emailSearch, setEmailSearch] = useState("");
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<number | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const fetchUsers = async (pageNum: number) => {
+  const fetchUsers = async (pageNum: number, email?: string) => {
     try {
-      const usersData = await adminService.getUsers(pageNum, 10);
+      const usersData = await adminService.getUsers(pageNum, 10, email);
       setUsers(usersData.content);
       setUsersTotalPages(usersData.totalPages);
       setUsersPage(usersData.number);
@@ -95,6 +98,17 @@ function AdminPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchUsers(0, emailSearch || undefined);
+      setUsersPage(0);
+    }, 300);
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [emailSearch]);
 
   const handleBlock = async (id: number) => {
     setActionId(id);
@@ -166,8 +180,21 @@ function AdminPage() {
         )}
 
         <section className="rounded-2xl bg-white shadow-sm">
-          <div className="border-b border-apple-100 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-apple-100 px-6 py-4">
             <h2 className="text-base font-semibold text-apple-900">Users</h2>
+            <div className="relative">
+              <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-apple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search by email..."
+                value={emailSearch}
+                onChange={(e) => setEmailSearch(e.target.value)}
+                className="w-64 rounded-full bg-apple-50 py-1.5 pl-9 pr-4 text-sm text-apple-900 placeholder-apple-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-apple-blue transition-all"
+              />
+            </div>
           </div>
 
           {loading ? (
@@ -233,7 +260,7 @@ function AdminPage() {
               <div className="flex items-center justify-center gap-1 border-t border-apple-100 px-6 py-4">
                 <button
                   disabled={usersPage === 0}
-                  onClick={() => fetchUsers(usersPage - 1)}
+                  onClick={() => fetchUsers(usersPage - 1, emailSearch || undefined)}
                   className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label="Previous Page"
                 >
@@ -253,7 +280,7 @@ function AdminPage() {
                   ) : (
                     <button
                       key={page}
-                      onClick={() => fetchUsers(Number(page) - 1)}
+                      onClick={() => fetchUsers(Number(page) - 1, emailSearch || undefined)}
                       className={`flex h-8 w-8 items-center justify-center rounded-md text-sm transition-colors ${page === usersPage + 1
                           ? "bg-gray-900 font-medium text-white"
                           : "text-gray-600 hover:bg-gray-100"
@@ -266,7 +293,7 @@ function AdminPage() {
 
                 <button
                   disabled={usersPage >= usersTotalPages - 1}
-                  onClick={() => fetchUsers(usersPage + 1)}
+                  onClick={() => fetchUsers(usersPage + 1, emailSearch || undefined)}
                   className="flex h-8 w-8 items-center justify-center rounded-md text-sm text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label="Next Page"
                 >

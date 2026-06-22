@@ -35,6 +35,11 @@ public class NotificationService {
     }
 
     @Transactional
+    public void clearAllNotifications(Long userId) {
+        notificationRepository.deleteByUserId(userId);
+    }
+
+    @Transactional
     public NotificationResponse createNotification(Long userId, String message) {
         User user = userRepository.getReferenceById(userId);
         Notification notification = Notification.builder()

@@ -2,6 +2,7 @@ package com.finance.platform.service;
 
 import com.finance.platform.dto.IncomeRequest;
 import com.finance.platform.dto.IncomeResponse;
+import com.finance.platform.dto.TransactionPageResponse;
 import com.finance.platform.entity.Category;
 import com.finance.platform.entity.Income;
 import com.finance.platform.entity.User;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -44,7 +46,7 @@ public class IncomeService {
                 .toList();
     }
 
-    public Page<IncomeResponse> getAllIncomes(Long userId, Long categoryId, Pageable pageable) {
+    public TransactionPageResponse<IncomeResponse> getAllIncomes(Long userId, Long categoryId, Pageable pageable) {
         Page<Income> page;
 
         if (categoryId != null) {
@@ -53,7 +55,12 @@ public class IncomeService {
             page = incomeRepository.findByUserId(userId, pageable);
         }
 
-        return page.map(this::toResponse);
+        BigDecimal totalSum = incomeRepository.sumAllByUserId(userId);
+        List<IncomeResponse> content = page.map(this::toResponse).getContent();
+
+        return new TransactionPageResponse<>(
+                content, page.getTotalPages(), page.getTotalElements(),
+                page.getNumber(), page.getSize(), page.isFirst(), page.isLast(), totalSum);
     }
 
     public IncomeResponse getIncomeById(Long id, Long userId) {

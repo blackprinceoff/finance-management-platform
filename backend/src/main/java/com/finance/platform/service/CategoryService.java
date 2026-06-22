@@ -48,6 +48,13 @@ public class CategoryService {
             throw new UnauthorizedException("Only admins can create global categories");
         }
 
+        boolean duplicate = categoryRepository.findByUserIdOrIsGlobal(principal.getId())
+                .stream()
+                .anyMatch(c -> c.getName().equalsIgnoreCase(request.name()));
+        if (duplicate) {
+            throw new BadRequestException("A category with this name already exists.");
+        }
+
         User userRef = request.isGlobal() ? null : userRepository.getReferenceById(principal.getId());
 
         Category category = Category.builder()

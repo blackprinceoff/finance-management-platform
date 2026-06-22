@@ -55,6 +55,22 @@ class NotificationStore {
       return false;
     }
   }
+
+  async clearAll(): Promise<boolean> {
+    this.error = null;
+    try {
+      await notificationService.clearAll();
+      runInAction(() => {
+        this.notifications = [];
+      });
+      return true;
+    } catch (e: unknown) {
+      runInAction(() => {
+        this.error = extractErrorMessage(e);
+      });
+      return false;
+    }
+  }
 }
 
 const notificationStore = new NotificationStore();

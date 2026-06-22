@@ -10,8 +10,10 @@ import java.util.Optional;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
 
-    @Query("SELECT c FROM Category c WHERE c.user.id = :userId OR c.isGlobal = true")
+    @Query("SELECT c FROM Category c WHERE c.user.id = :userId OR c.isGlobal = true ORDER BY c.id ASC")
     List<Category> findByUserIdOrIsGlobal(@Param("userId") Long userId);
 
     Optional<Category> findByIdAndUserId(Long id, Long userId);
+
+    boolean existsByNameIgnoreCase(String name);
 }

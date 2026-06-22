@@ -7,11 +7,12 @@ export interface AdminUserPage {
   number: number;
 }
 
-export function getUsers(page = 0, size = 10): Promise<AdminUserPage> {
+export function getUsers(page = 0, size = 10, email?: string): Promise<AdminUserPage> {
   const params = new URLSearchParams({
     page: String(page),
     size: String(size),
   });
+  if (email) params.append("email", email);
   return api.get(`/admin/users?${params.toString()}`).then((res) => res.data);
 }
 

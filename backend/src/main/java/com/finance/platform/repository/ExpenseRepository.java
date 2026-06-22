@@ -36,6 +36,9 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     boolean existsByCategoryId(Long categoryId);
 
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.user.id = :userId")
+    BigDecimal sumAllByUserId(@Param("userId") Long userId);
+
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e " +
            "WHERE e.user.id = :userId AND MONTH(e.date) = :month AND YEAR(e.date) = :year")
     BigDecimal sumByUserIdAndMonthAndYear(@Param("userId") Long userId,

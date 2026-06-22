@@ -29,8 +29,11 @@ public class AdminService {
     private final AuditLogRepository auditLogRepository;
     private final AuditLoggingService auditLoggingService;
 
-    public Page<UserDTO> getAllUsers(int page, int size) {
+    public Page<UserDTO> getAllUsers(int page, int size, String email) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
+        if (email != null && !email.isBlank()) {
+            return userRepository.findByEmailContainingIgnoreCase(email, pageable).map(this::toUserDTO);
+        }
         return userRepository.findAll(pageable).map(this::toUserDTO);
     }
 

@@ -8,3 +8,7 @@ export function getAll(): Promise<Notification[]> {
 export function markAsRead(id: number): Promise<void> {
   return api.put(`/notifications/${id}/read`).then(() => {});
 }
+
+export function clearAll(): Promise<void> {
+  return api.delete("/notifications").then(() => {});
+}
