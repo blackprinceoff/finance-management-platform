@@ -62,16 +62,16 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.email(), request.password())
+        );
+
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
         if (user.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("User account is locked or disabled");
         }
-
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
-        );
 
         String token = jwtUtil.generateToken(UserPrincipal.from(user));
         

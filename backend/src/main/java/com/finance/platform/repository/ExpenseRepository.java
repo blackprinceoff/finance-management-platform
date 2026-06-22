@@ -23,4 +23,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     @EntityGraph(attributePaths = {"category", "user"})
     @Query("SELECT e FROM Expense e WHERE e.user.id = :userId AND MONTH(e.date) = :month AND YEAR(e.date) = :year")
     List<Expense> findByUserIdAndMonthAndYear(@Param("userId") Long userId, @Param("month") int month, @Param("year") int year);
+
+    boolean existsByCategoryId(Long categoryId);
 }

@@ -23,4 +23,6 @@ public interface IncomeRepository extends JpaRepository<Income, Long> {
     @EntityGraph(attributePaths = {"category", "user"})
     @Query("SELECT i FROM Income i WHERE i.user.id = :userId AND MONTH(i.date) = :month AND YEAR(i.date) = :year")
     List<Income> findByUserIdAndMonthAndYear(@Param("userId") Long userId, @Param("month") int month, @Param("year") int year);
+
+    boolean existsByCategoryId(Long categoryId);
 }

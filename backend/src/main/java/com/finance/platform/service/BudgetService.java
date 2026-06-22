@@ -52,6 +52,10 @@ public class BudgetService {
             throw new BadRequestException("Budgets can only be created for EXPENSE categories");
         }
 
+        if (budgetRepository.existsByUserIdAndCategoryIdAndMonthAndYear(userId, request.categoryId(), request.month(), request.year())) {
+            throw new BadRequestException("A budget for this category and month already exists");
+        }
+
         User userRef = userRepository.getReferenceById(userId);
 
         Budget budget = Budget.builder()
@@ -79,6 +83,14 @@ public class BudgetService {
 
         if (category.getType() != CategoryType.EXPENSE) {
             throw new BadRequestException("Budgets can only be created for EXPENSE categories");
+        }
+
+        boolean isUnchanged = budget.getCategory().getId().equals(request.categoryId())
+                && budget.getMonth() == request.month()
+                && budget.getYear() == request.year();
+
+        if (!isUnchanged && budgetRepository.existsByUserIdAndCategoryIdAndMonthAndYear(userId, request.categoryId(), request.month(), request.year())) {
+            throw new BadRequestException("A budget for this category and month already exists");
         }
 
         budget.setAmount(request.amount());

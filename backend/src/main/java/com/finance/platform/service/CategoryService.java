@@ -4,10 +4,14 @@ import com.finance.platform.dto.CategoryRequest;
 import com.finance.platform.dto.CategoryResponse;
 import com.finance.platform.entity.Category;
 import com.finance.platform.entity.User;
+import com.finance.platform.exception.BadRequestException;
 import com.finance.platform.exception.ResourceNotFoundException;
 import com.finance.platform.exception.UnauthorizedException;
 import com.finance.platform.repository.CategoryRepository;
 import com.finance.platform.repository.UserRepository;
+import com.finance.platform.repository.ExpenseRepository;
+import com.finance.platform.repository.IncomeRepository;
+import com.finance.platform.repository.BudgetRepository;
 import com.finance.platform.security.UserPrincipal;
 import com.finance.platform.util.RoleConstants;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +27,9 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final ExpenseRepository expenseRepository;
+    private final IncomeRepository incomeRepository;
+    private final BudgetRepository budgetRepository;
 
     public List<CategoryResponse> getAllCategories(Long userId) {
         return categoryRepository.findByUserIdOrIsGlobal(userId).stream()
@@ -70,6 +77,14 @@ public class CategoryService {
 
         if (request.isGlobal() && !principal.hasRole(RoleConstants.ADMIN)) {
             throw new UnauthorizedException("Only admins can convert a category to global");
+        }
+
+        if (category.getType() != request.type()) {
+            if (expenseRepository.existsByCategoryId(id) ||
+                incomeRepository.existsByCategoryId(id) ||
+                budgetRepository.existsByCategoryId(id)) {
+                throw new BadRequestException("Cannot change category type because it is already linked to existing transactions or budgets");
+            }
         }
 
         category.setName(request.name());

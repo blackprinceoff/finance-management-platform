@@ -19,6 +19,10 @@ public interface BudgetRepository extends JpaRepository<Budget, Long> {
     @EntityGraph(attributePaths = {"category", "user"})
     List<Budget> findByUserIdAndMonthAndYear(Long userId, int month, int year);
 
+    boolean existsByUserIdAndCategoryIdAndMonthAndYear(Long userId, Long categoryId, int month, int year);
+
+    boolean existsByCategoryId(Long categoryId);
+
     interface ExceededBudgetInfo {
         Long getUserId();
         String getCategoryName();
