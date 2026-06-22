@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { observer } from "mobx-react-lite";
 import authStore from "../stores/authStore";
 import notificationStore from "../stores/notificationStore";
 import Button from "./Button";
+import ConfirmModal from "./ConfirmModal";
 
 interface HeaderProps {
   currentPage: string;
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
 function Header({ currentPage }: HeaderProps) {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,9 +39,14 @@ function Header({ currentPage }: HeaderProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [dropdownOpen]);
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setIsLogoutModalOpen(true);
+  };
+
+  const handleConfirmLogout = () => {
     authStore.logout();
     navigate("/auth");
+    setIsLogoutModalOpen(false);
   };
 
   const handleNotificationClick = (id: number, isRead: boolean) => {
@@ -64,9 +71,12 @@ function Header({ currentPage }: HeaderProps) {
   return (
     <header className="grid grid-cols-3 items-center border-b border-apple-200 bg-white px-6 py-4">
       <div className="flex justify-start">
-        <span className="text-lg font-semibold text-apple-900">
+        <Link
+          to="/dashboard"
+          className="text-lg font-semibold text-apple-900 transition-opacity hover:opacity-80"
+        >
           Finance Platform
-        </span>
+        </Link>
       </div>
 
       <nav className="flex items-center justify-center gap-6">
@@ -172,10 +182,20 @@ function Header({ currentPage }: HeaderProps) {
           )}
         </div>
 
-        <Button variant="secondary" onClick={handleLogout}>
+        <Button variant="secondary" onClick={handleLogoutClick}>
           Logout
         </Button>
       </div>
+
+      <ConfirmModal
+        isOpen={isLogoutModalOpen}
+        title="Confirm Logout"
+        message="Are you sure you want to log out of your account?"
+        confirmText="Logout"
+        confirmClassName="bg-red-600 hover:bg-red-700"
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setIsLogoutModalOpen(false)}
+      />
     </header>
   );
 }

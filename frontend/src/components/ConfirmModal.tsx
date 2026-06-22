@@ -7,6 +7,8 @@ interface ConfirmModalProps {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  confirmText?: string;
+  confirmClassName?: string;
 }
 
 export default function ConfirmModal({
@@ -15,6 +17,8 @@ export default function ConfirmModal({
   message,
   onConfirm,
   onCancel,
+  confirmText = "Delete",
+  confirmClassName = "bg-red-600 hover:bg-red-700",
 }: ConfirmModalProps) {
   useEffect(() => {
     if (isOpen) {
@@ -40,9 +44,9 @@ export default function ConfirmModal({
           </Button>
           <button
             onClick={onConfirm}
-            className="flex items-center justify-center rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-red-700 hover:shadow-md active:scale-95"
+            className={`flex items-center justify-center rounded-full px-5 py-2 text-sm font-semibold text-white transition-all duration-200 hover:shadow-md active:scale-95 ${confirmClassName}`}
           >
-            Delete
+            {confirmText}
           </button>
         </div>
       </div>
